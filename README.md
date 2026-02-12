@@ -2,7 +2,9 @@
 
 A multi-agent orchestration system for VS Code Copilot that enables complex software development workflows through intelligent agent delegation and parallel execution.
 
-> Built upon the foundation of [copilot-orchestra](https://github.com/ShepAlderson/copilot-orchestra) by ShepAlderson, with agent naming conventions inspired by [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode).
+> Forked from bigguy345/Github-Copilot-Atlas, which was built upon the foundation of [copilot-orchestra](https://github.com/ShepAlderson/copilot-orchestra) by ShepAlderson, with agent naming conventions inspired by [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode).
+
+> The main changes from the upstream repo is that I changed the models used for the subagents to the ones I have access to and I split the Atlas agent into AtlasSonnet and AtlasOpus for more flexibility.
 
 > **Note:** Best supported on VS Code Insiders (as of January 2026) for access to the latest agent orchestration features.
 
@@ -14,12 +16,16 @@ This repository contains custom agent prompts that work together to handle the c
 
 ### Primary Agents
 
-- **Atlas** (`Atlas.agent.md`) - The ORCHESTRATOR
+- **AtlasSonnet** (`AtlasSonnet.agent.md`) - The ORCHESTRATOR
   - **Model:** Claude Sonnet 4.5 (copilot)
   - Orchestrates the full development lifecycle
   - Delegates to specialized subagents for research, implementation, and review
   - Manages context conservation and parallel execution
   - Handles phase tracking and user approval gates
+  
+- **AtlasOpus** (`AtlasOpus.agent.md`) - The ORCHESTRATOR
+  - **Model:** Claude Opus 4.6 (copilot)  
+  - Exactly the same as AtlasSonnet, just with Opus.
 
 - **Prometheus** (`Prometheus.agent.md`) - The AUTONOMOUS PLANNER
   - **Model:** GPT-5.2 High (if reasoning set to high, check requirements block below)
@@ -38,28 +44,28 @@ This repository contains custom agent prompts that work together to handle the c
   - Supports parallel research across independent subsystems
 
 - **Sisyphus-subagent** (`Sisyphus-subagent.agent.md`) - THE IMPLEMENTER
-  - **Model:** Claude Sonnet 4.5 (copilot)
+  - **Model:** GPT-5.2-Codex (copilot)
   - Executes implementation following strict TDD principles
   - Writes tests first, then minimal code to pass
   - Handles linting and formatting
   - Can be invoked in parallel for disjoint features
 
 - **Explorer-subagent** (`Explorer-subagent.agent.md`) - THE SCOUT
-  - **Model:** Gemini 3 Flash (Preview) (copilot)
+  - **Model:** GPT-5.2 (copilot)
   - Rapid file/usage discovery across codebases
   - Read-only exploration (no edits/commands)
   - Returns structured results with file lists and analysis
   - MANDATORY parallel search strategy (3-10 simultaneous searches)
 
 - **Code-Review-subagent** (`Code-Review-subagent.agent.md`) - THE REVIEWER
-  - **Model:** GPT-5.2 (copilot)
+  - **Model:** GPT-5.2-Codex (copilot)
   - Reviews code for correctness, quality, and test coverage
   - Returns structured feedback (APPROVED/NEEDS_REVISION/FAILED)
   - Can be invoked in parallel for independent phases
   - Focus on blocking issues vs nice-to-haves
 
 - **Frontend-Engineer-subagent** (`Frontend-Engineer-subagent.agent.md`) - THE UI/UX SPECIALIST
-  - **Model:** Gemini 3 Pro (Preview) (copilot)
+  - **Model:** GPT-5.2-Codex (copilot)
   - Implements user interfaces, styling, and responsive layouts
   - Expert in modern frontend frameworks and tooling
   - Follows TDD principles for frontend (component tests first)
@@ -111,7 +117,7 @@ This repository contains custom agent prompts that work together to handle the c
 
 1. **Clone or download this repository:**
    ```bash
-   git clone https://github.com/bigguy345/Github-Copilot-Atlas.git
+   git clone https://github.com/prdubois/Github-Copilot-Atlas.git
    ```
 
 2. **Copy agent files to VS Code User prompts directory:**
