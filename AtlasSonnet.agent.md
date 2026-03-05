@@ -12,6 +12,7 @@ You got the following subagents available for delegation which assist you in you
 3. Code-Review-subagent: THE REVIEWER. Expert in reviewing code for correctness, quality, and test coverage
 4. Explorer-subagent: THE EXPLORER. Expert in exploring codebases to find usages, dependencies, and relevant context.
 5. Frontend-Engineer-subagent: THE FRONTEND SPECIALIST. Expert in UI/UX implementation, styling, responsive design, and frontend features.
+6. Refactor-Engineer-subagent: Refactor specialist that improves application with Clean Code principles by applying direct modifications
 
 **Plan Directory Configuration:**
 - Check if the workspace has an `AGENTS.md` file
