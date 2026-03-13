@@ -28,7 +28,7 @@ This repository contains custom agent prompts that work together to handle the c
   - Exactly the same as AtlasSonnet, just with Opus.
 
 - **Prometheus** (`Prometheus.agent.md`) - The AUTONOMOUS PLANNER
-  - **Model:** GPT-5.2 High (if reasoning set to high, check requirements block below)
+  - **Model:** GPT-5.4 High (if reasoning set to high, check requirements block below)
   - Researches requirements and analyzes codebases
   - Writes comprehensive TDD-driven implementation plans
   - Automatically hands off to Atlas for execution
@@ -37,35 +37,35 @@ This repository contains custom agent prompts that work together to handle the c
 ### Specialized Subagents
 
 - **Oracle-subagent** (`Oracle-subagent.agent.md`) - THE RESEARCHER
-  - **Model:** GPT-5.2 (copilot)
+  - **Model:** GPT-5.4 (copilot)
   - Gathers comprehensive context about tasks
   - Can delegate to Explorer for large-scope research
   - Returns structured findings to parent agents
   - Supports parallel research across independent subsystems
 
 - **Sisyphus-subagent** (`Sisyphus-subagent.agent.md`) - THE IMPLEMENTER
-  - **Model:** GPT-5.2-Codex (copilot)
+  - **Model:** GPT-5.3-Codex (copilot)
   - Executes implementation following strict TDD principles
   - Writes tests first, then minimal code to pass
   - Handles linting and formatting
   - Can be invoked in parallel for disjoint features
 
 - **Explorer-subagent** (`Explorer-subagent.agent.md`) - THE SCOUT
-  - **Model:** GPT-5.2 (copilot)
+  - **Model:** GPT-5.4 (copilot)
   - Rapid file/usage discovery across codebases
   - Read-only exploration (no edits/commands)
   - Returns structured results with file lists and analysis
   - MANDATORY parallel search strategy (3-10 simultaneous searches)
 
 - **Code-Review-subagent** (`Code-Review-subagent.agent.md`) - THE REVIEWER
-  - **Model:** GPT-5.2-Codex (copilot)
+  - **Model:** GPT-5.3-Codex (copilot)
   - Reviews code for correctness, quality, and test coverage
   - Returns structured feedback (APPROVED/NEEDS_REVISION/FAILED)
   - Can be invoked in parallel for independent phases
   - Focus on blocking issues vs nice-to-haves
 
 - **Frontend-Engineer-subagent** (`Frontend-Engineer-subagent.agent.md`) - THE UI/UX SPECIALIST
-  - **Model:** GPT-5.2-Codex (copilot)
+  - **Model:** GPT-5.3-Codex (copilot)
   - Implements user interfaces, styling, and responsive layouts
   - Expert in modern frontend frameworks and tooling
   - Follows TDD principles for frontend (component tests first)
@@ -261,7 +261,7 @@ Create a new file in your prompts directory: `YourAgent-subagent.agent.md`
 description: 'Brief description of what this agent does'
 argument-hint: What kind of task to delegate (e.g., "Analyze database schema")
 tools: ['search', 'usages', 'edit', 'runCommands', ...]  # Tools your agent needs
-model: Claude Sonnet 4.5 (copilot)  # Or GPT-5.2, Gemini, etc.
+model: Claude Sonnet 4.5 (copilot)  # Or GPT-5.4, Gemini, etc.
 ---
 
 You are a [ROLE] SUBAGENT called by a parent CONDUCTOR agent.
@@ -398,7 +398,7 @@ Create a new file in your prompts directory: `YourAgent-subagent.agent.md`
 description: 'Brief description of what this agent does'
 argument-hint: What kind of task to delegate (e.g., "Analyze database schema")
 tools: ['search', 'usages', 'edit', 'runCommands', ...]  # Tools your agent needs
-model: Claude Sonnet 4.5 (copilot)  # Or GPT-5.2, Gemini, etc.
+model: Claude Sonnet 4.5 (copilot)  # Or GPT-5.4, Gemini, etc.
 ---
 
 You are a [ROLE] SUBAGENT called by a parent CONDUCTOR agent.
