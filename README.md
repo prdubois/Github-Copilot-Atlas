@@ -93,6 +93,15 @@ This repository contains custom agent prompts that work together to handle the c
   - Performs threat modeling and attack vector assessment
   - Suggests DevSecOps tools and security testing integration
 
+- **Documentation-Specialist-subagent** (`Documentation-Specialist-subagent.agent.md`) - THE DOCUMENTATION GUARDIAN
+  - **Model:** Claude Sonnet 4.5 (copilot)
+  - **When to use:** After implementation completion to document changes systematically
+  - Prevents documentation proliferation by updating existing docs instead of creating new ones
+  - Maintains structured development journal with detailed implementation history
+  - Ensures documentation consistency across the project
+  - Manages changelog, version files, and module-specific documentation
+  - Enforces "dev_journal.md" entries with timestamps and executive summaries
+
 **Security Subagent Usage Guide:**
 - Use **Security-Review-subagent** first for a comprehensive security audit and to identify all vulnerabilities
 - Then use **Security-Fix-subagent** to progressively fix the identified code-level issues
