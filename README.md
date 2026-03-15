@@ -552,7 +552,7 @@ This project builds upon the excellent work of:
 - **[copilot-orchestra](https://github.com/ShepAlderson/copilot-orchestra)** by [ShepAlderson](https://github.com/ShepAlderson) - Foundation and concept for multi-agent orchestration
 - **[oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode)** by [code-yeongyu](https://github.com/code-yeongyu) - Inspiration for agent naming conventions and templates
 - **[Github-Copilot-Atlas](https://github.com/bigguy345/Github-Copilot-Atlas)** by [bigguy345](https://github.com/bigguy345) - The forked repo
-- **[gologic-promptops](https://github.com/gologic-ca/gologic-promptops)** by [gologic-ben](https://github.com/gologic-ben) - Prompt for the code refactoring agent
+- **[gologic-promptops](https://github.com/gologic-ca/gologic-promptops)** by [gologic-ben](https://github.com/gologic-ben) - Prompt for the code refactoring and security subagents
 
 ---
 
