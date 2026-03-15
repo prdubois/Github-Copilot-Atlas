@@ -4,7 +4,7 @@ A multi-agent orchestration system for VS Code Copilot that enables complex soft
 
 > Forked from bigguy345/Github-Copilot-Atlas, which was built upon the foundation of [copilot-orchestra](https://github.com/ShepAlderson/copilot-orchestra) by ShepAlderson, with agent naming conventions inspired by [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode).
 
-> The main changes from the upstream repo is that I changed the models used for the subagents to the ones I have access to and I split the Atlas agent into AtlasSonnet and AtlasOpus for more flexibility.
+> The main changes from the upstream repo is that I changed the models used for the subagents to the ones I have access to and I split the Atlas agent into AtlasSonnet, AtlasOpus and AtlasGPT for more flexibility.
 
 > **Note:** Best supported on VS Code Insiders (as of January 2026) for access to the latest agent orchestration features.
 
@@ -16,16 +16,15 @@ This repository contains custom agent prompts that work together to handle the c
 
 ### Primary Agents
 
-- **AtlasSonnet** (`AtlasSonnet.agent.md`) - The ORCHESTRATOR
-  - **Model:** Claude Sonnet 4.5 (copilot)
+- **Atlas** - The ORCHESTRATOR
+  - Available in 3 model variants:
+    - **AtlasSonnet** (`AtlasSonnet.agent.md`) - Claude Sonnet 4.5 (copilot)
+    - **AtlasOpus** (`AtlasOpus.agent.md`) - Claude Opus 4.6 (copilot)
+    - **AtlasGPT** (`AtlasGPT.agent.md`) - GPT-5.4 (copilot)
   - Orchestrates the full development lifecycle
   - Delegates to specialized subagents for research, implementation, and review
   - Manages context conservation and parallel execution
   - Handles phase tracking and user approval gates
-  
-- **AtlasOpus** (`AtlasOpus.agent.md`) - The ORCHESTRATOR
-  - **Model:** Claude Opus 4.6 (copilot)  
-  - Exactly the same as AtlasSonnet, just with Opus.
 
 - **Prometheus** (`Prometheus.agent.md`) - The AUTONOMOUS PLANNER
   - **Model:** GPT-5.4 High (if reasoning set to high, check requirements block below)
@@ -70,6 +69,35 @@ This repository contains custom agent prompts that work together to handle the c
   - Expert in modern frontend frameworks and tooling
   - Follows TDD principles for frontend (component tests first)
   - Focuses on accessibility and responsive design
+
+- **Refactor-Engineer-subagent** (`Refactor-Engineer-subagent.agent.md`) - THE CODE QUALITY SPECIALIST
+  - **Model:** GPT-5.3-Codex (copilot)
+  - Refactors code to comply with Clean Code principles
+  - Improves readability, simplicity, and maintainability
+  - Applies SOLID principles and reduces technical debt
+  - Preserves behavior while improving code structure
+
+- **Security-Fix-subagent** (`Security-Fix-subagent.agent.md`) - THE SECURITY REMEDIATION SPECIALIST
+  - **Model:** GPT-5.3-Codex (copilot)
+  - **When to use:** Direct, immediate fixes for known security vulnerabilities in code
+  - Directly modifies code to eliminate security vulnerabilities
+  - Fixes injection flaws, XSS, hardcoded secrets, weak crypto, etc.
+  - Provides educational explanations for each fix
+  - Focuses exclusively on code-level security (not dependencies/CVEs)
+
+- **Security-Review-subagent** (`Security-Review-subagent.agent.md`) - THE SECURITY ANALYST
+  - **Model:** GPT-5.3-Codex (copilot)
+  - **When to use:** Comprehensive security analysis and OWASP compliance assessment
+  - Analyzes code for OWASP Top 10 and ASVS vulnerabilities
+  - Provides detailed remediation recommendations (no code fixes)
+  - Performs threat modeling and attack vector assessment
+  - Suggests DevSecOps tools and security testing integration
+
+**Security Subagent Usage Guide:**
+- Use **Security-Review-subagent** first for a comprehensive security audit and to identify all vulnerabilities
+- Then use **Security-Fix-subagent** to progressively fix the identified code-level issues
+- Security-Review focuses on analysis and recommendations; Security-Fix focuses on implementation
+- Both agents work on code only (dependencies and CVEs are handled by tools like Snyk, Dependabot, SonarQube)
 
 ## Key Features
 
@@ -120,10 +148,23 @@ This repository contains custom agent prompts that work together to handle the c
    git clone https://github.com/prdubois/Github-Copilot-Atlas.git
    ```
 
-2. **Copy agent files to VS Code User prompts directory:**
-   - **Windows:** `%APPDATA%\Code\User\prompts\` (or `%APPDATA%\Code - Insiders\User\prompts\` if using Insiders)
-   - **macOS:** `~/Library/Application Support/Code/User/prompts/` (or `~/Library/Application Support/Code - Insiders/User/prompts/` if using Insiders)
-   - **Linux:** `~/.config/Code/User/prompts/` (or `~/.config/Code - Insiders/User/prompts/` if using Insiders)
+2.
+  - **Option A: Copy agent files to VS Code User prompts directory:**
+    - **Windows:** `%APPDATA%\Code\User\prompts\` (or `%APPDATA%\Code - Insiders\User\prompts\` if using Insiders)
+    - **macOS:** `~/Library/Application Support/Code/User/prompts/` (or `~/Library/Application Support/Code - Insiders/User/prompts/` if using Insiders)
+    - **Linux:** `~/.config/Code/User/prompts/` (or `~/.config/Code - Insiders/User/prompts/` if using Insiders)
+  
+  - **Option B: (recommended) create a symlink between your local repo to VS Code User prompts directory:**
+   This makes it easy to pull the latest changes and get VS Code up to date.
+    - **Windows (powershell in admin mode):**
+    ```powershell   
+     # Example paths — YOU must set $profileUser correctly after locating it.
+    $profileUser = "$env:APPDATA\Code\User"   # or ...\Code - Insiders\User, or a Profiles subfolder
+    $repoAgents  = "C:\Programming\Github-Copilot-Atlas"
+
+    # create junction: profile agents -> repo agents
+    cmd /c rmdir "$profileUser\agents" 2>nul
+    cmd /c mklink /J "$profileUser\agents" "$repoAgents"
 
 3. **Reload VS Code** to recognize the new agents
 
@@ -339,11 +380,13 @@ Add an entry to the README's Specialized Subagents section describing when to us
 
 #### Example Custom Agents
 
-- **Security-Auditor**: Reviews code for vulnerabilities, dependency issues, auth flaws
+- **Database-Expert**: Specializes in SQL optimization, schema design, and query analysis
 - **Performance-Analyzer**: Profiles code, identifies bottlenecks, suggests optimizations
 - **API-Designer**: Reviews/designs REST/GraphQL APIs, ensures consistency
 - **Documentation-Writer**: Generates comprehensive docs from code
 - **Migration-Expert**: Handles database migrations, version upgrades, refactoring
+
+**Note:** Security analysis is now built-in via Security-Review-subagent and Security-Fix-subagent.
 
 ## Requirements
 
@@ -471,11 +514,13 @@ Add an entry to the README's Specialized Subagents section describing when to us
 
 #### Example Custom Agents
 
-- **Security-Auditor**: Reviews code for vulnerabilities, dependency issues, auth flaws
+- **Database-Expert**: Specializes in SQL optimization, schema design, and query analysis
 - **Performance-Analyzer**: Profiles code, identifies bottlenecks, suggests optimizations
 - **API-Designer**: Reviews/designs REST/GraphQL APIs, ensures consistency
 - **Documentation-Writer**: Generates comprehensive docs from code
 - **Migration-Expert**: Handles database migrations, version upgrades, refactoring
+
+**Note:** Security analysis is now built-in via Security-Review-subagent and Security-Fix-subagent.
 
 ## License
 
@@ -506,6 +551,8 @@ SOFTWARE.
 This project builds upon the excellent work of:
 - **[copilot-orchestra](https://github.com/ShepAlderson/copilot-orchestra)** by [ShepAlderson](https://github.com/ShepAlderson) - Foundation and concept for multi-agent orchestration
 - **[oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode)** by [code-yeongyu](https://github.com/code-yeongyu) - Inspiration for agent naming conventions and templates
+- **[Github-Copilot-Atlas](https://github.com/bigguy345/Github-Copilot-Atlas)** by [bigguy345](https://github.com/bigguy345) - The forked repo
+- **[gologic-promptops](https://github.com/gologic-ca/gologic-promptops)** by [gologic-ben](https://github.com/gologic-ben) - Prompt for the code refactoring agent
 
 ---
 
