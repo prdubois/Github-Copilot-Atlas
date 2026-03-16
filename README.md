@@ -2,558 +2,306 @@
 
 A multi-agent orchestration system for VS Code Copilot that enables complex software development workflows through intelligent agent delegation and parallel execution.
 
-> Forked from bigguy345/Github-Copilot-Atlas, which was built upon the foundation of [copilot-orchestra](https://github.com/ShepAlderson/copilot-orchestra) by ShepAlderson, with agent naming conventions inspired by [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode).
-
-> The main changes from the upstream repo is that I changed the models used for the subagents to the ones I have access to and I split the Atlas agent into AtlasSonnet, AtlasOpus and AtlasGPT for more flexibility.
-
 > **Note:** Best supported on VS Code Insiders (as of January 2026) for access to the latest agent orchestration features.
 
 ## Overview
 
-This repository contains custom agent prompts that work together to handle the complete software development lifecycle: **Planning → Implementation → Review → Commit**. The system uses a conductor-delegate pattern where a main orchestrator (Atlas) coordinates specialized subagents to efficiently tackle complex development tasks.
+Custom agent prompts that work together to handle the complete software development lifecycle: **Planning → Implementation → Review → Commit**. The system uses a conductor-delegate pattern where Atlas coordinates specialized subagents.
+
+---
+
+## Quick Start
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/prdubois/Github-Copilot-Atlas.git
+```
+
+### 2. Install Agent Files
+
+**Recommended: Create symlinks** (easy updates via git pull)
+
+**Windows (PowerShell as Admin):**
+```powershell
+# Set your paths
+$profileUser = "$env:APPDATA\Code\User"   # or ...\Code - Insiders\User
+$repoAgents  = "C:\path\to\Github-Copilot-Atlas"
+
+# Create junction
+cmd /c rmdir "$profileUser\agents" 2>nul
+cmd /c mklink /J "$profileUser\agents" "$repoAgents"
+```
+
+**macOS/Linux:**
+```bash
+# Set your paths
+PROFILE_USER="$HOME/Library/Application Support/Code/User"  # macOS
+# PROFILE_USER="$HOME/.config/Code/User"                    # Linux
+
+REPO_AGENTS="/path/to/Github-Copilot-Atlas"
+
+# Create symlink
+rm -rf "$PROFILE_USER/agents"
+ln -s "$REPO_AGENTS" "$PROFILE_USER/agents"
+```
+
+**Alternative: Copy files directly** to VS Code prompts directory:
+- **Windows:** `%APPDATA%\Code\User\prompts\`
+- **macOS:** `~/Library/Application Support/Code/User/prompts/`
+- **Linux:** `~/.config/Code/User/prompts/`
+
+### 3. Configure VS Code Settings
+
+```json
+{
+  "chat.customAgentInSubagent.enabled": true,
+  "github.copilot.chat.responsesApiReasoningEffort": "high"
+}
+```
+
+### 4. Set Up AGENTS.md in Your Projects
+
+Copy the template to each project you work on:
+
+```bash
+cp AGENTS-template.md /path/to/your/project/AGENTS.md
+```
+
+**Important:**
+- Rename to `AGENTS.md` (uppercase, like README.md)
+- Place in project root
+- Do NOT modify — project-specific details belong in your project's `README.md`
+
+The `AGENTS.md` file instructs all agents to:
+- Read `README.md` first (mandatory)
+- Follow E2E-first testing philosophy
+- Prefer updating docs over creating new files
+- Maintain dev journals for implementation history
+
+### 5. Reload VS Code
+
+---
 
 ## Architecture
 
 ### Primary Agents
 
-- **Atlas** - The ORCHESTRATOR
-  - Available in 3 model variants:
-    - **AtlasSonnet** (`AtlasSonnet.agent.md`) - Claude Sonnet 4.5 (copilot)
-    - **AtlasOpus** (`AtlasOpus.agent.md`) - Claude Opus 4.6 (copilot)
-    - **AtlasGPT** (`AtlasGPT.agent.md`) - GPT-5.4 (copilot)
-  - Orchestrates the full development lifecycle
-  - Delegates to specialized subagents for research, implementation, and review
-  - Manages context conservation and parallel execution
-  - Handles phase tracking and user approval gates
-
-- **Prometheus** (`Prometheus.agent.md`) - The AUTONOMOUS PLANNER
-  - **Model:** GPT-5.4 High (if reasoning set to high, check requirements block below)
-  - Researches requirements and analyzes codebases
-  - Writes comprehensive TDD-driven implementation plans
-  - Automatically hands off to Atlas for execution
-  - Supports parallel research across multiple subsystems
+| Agent | Model | Role |
+|-------|-------|------|
+| **AtlasSonnet** | Claude Sonnet 4.5 | Orchestrator (balanced) |
+| **AtlasOpus** | Claude Opus 4.6 | Orchestrator (complex tasks) |
+| **AtlasGPT** | GPT-5.4 | Orchestrator (research-heavy) |
+| **Prometheus** | GPT-5.4 High | Autonomous planner → hands off to Atlas |
 
 ### Specialized Subagents
 
-- **Oracle-subagent** (`Oracle-subagent.agent.md`) - THE RESEARCHER
-  - **Model:** GPT-5.4 (copilot)
-  - Gathers comprehensive context about tasks
-  - Can delegate to Explorer for large-scope research
-  - Returns structured findings to parent agents
-  - Supports parallel research across independent subsystems
+| Agent | Model | Specialty |
+|-------|-------|-----------|
+| **Oracle** | GPT-5.4 | Context gathering, requirements research |
+| **Sisyphus** | GPT-5.3-Codex | TDD implementation, E2E-first testing |
+| **Explorer** | GPT-5.4 | Codebase exploration (3-10 parallel searches) |
+| **Code-Review** | GPT-5.3-Codex | Code quality, test coverage verification |
+| **Frontend-Engineer** | GPT-5.3-Codex | UI/UX, responsive design, accessibility |
+| **Refactor-Engineer** | GPT-5.3-Codex | Clean Code principles, SOLID |
+| **Security-Review** | GPT-5.3-Codex | OWASP analysis, threat modeling |
+| **Security-Fix** | GPT-5.3-Codex | Vulnerability remediation |
+| **Documentation** | Claude Sonnet 4.5 | Doc hygiene, dev journals |
 
-- **Sisyphus-subagent** (`Sisyphus-subagent.agent.md`) - THE IMPLEMENTER
-  - **Model:** GPT-5.3-Codex (copilot)
-  - Executes implementation following strict TDD principles
-  - Writes tests first, then minimal code to pass
-  - Handles linting and formatting
-  - Can be invoked in parallel for disjoint features
-
-- **Explorer-subagent** (`Explorer-subagent.agent.md`) - THE SCOUT
-  - **Model:** GPT-5.4 (copilot)
-  - Rapid file/usage discovery across codebases
-  - Read-only exploration (no edits/commands)
-  - Returns structured results with file lists and analysis
-  - MANDATORY parallel search strategy (3-10 simultaneous searches)
-
-- **Code-Review-subagent** (`Code-Review-subagent.agent.md`) - THE REVIEWER
-  - **Model:** GPT-5.3-Codex (copilot)
-  - Reviews code for correctness, quality, and test coverage
-  - Returns structured feedback (APPROVED/NEEDS_REVISION/FAILED)
-  - Can be invoked in parallel for independent phases
-  - Focus on blocking issues vs nice-to-haves
-
-- **Frontend-Engineer-subagent** (`Frontend-Engineer-subagent.agent.md`) - THE UI/UX SPECIALIST
-  - **Model:** GPT-5.3-Codex (copilot)
-  - Implements user interfaces, styling, and responsive layouts
-  - Expert in modern frontend frameworks and tooling
-  - Follows TDD principles for frontend (component tests first)
-  - Focuses on accessibility and responsive design
-
-- **Refactor-Engineer-subagent** (`Refactor-Engineer-subagent.agent.md`) - THE CODE QUALITY SPECIALIST
-  - **Model:** GPT-5.3-Codex (copilot)
-  - Refactors code to comply with Clean Code principles
-  - Improves readability, simplicity, and maintainability
-  - Applies SOLID principles and reduces technical debt
-  - Preserves behavior while improving code structure
-
-- **Security-Fix-subagent** (`Security-Fix-subagent.agent.md`) - THE SECURITY REMEDIATION SPECIALIST
-  - **Model:** GPT-5.3-Codex (copilot)
-  - **When to use:** Direct, immediate fixes for known security vulnerabilities in code
-  - Directly modifies code to eliminate security vulnerabilities
-  - Fixes injection flaws, XSS, hardcoded secrets, weak crypto, etc.
-  - Provides educational explanations for each fix
-  - Focuses exclusively on code-level security (not dependencies/CVEs)
-
-- **Security-Review-subagent** (`Security-Review-subagent.agent.md`) - THE SECURITY ANALYST
-  - **Model:** GPT-5.3-Codex (copilot)
-  - **When to use:** Comprehensive security analysis and OWASP compliance assessment
-  - Analyzes code for OWASP Top 10 and ASVS vulnerabilities
-  - Provides detailed remediation recommendations (no code fixes)
-  - Performs threat modeling and attack vector assessment
-  - Suggests DevSecOps tools and security testing integration
-
-- **Documentation-Specialist-subagent** (`Documentation-Specialist-subagent.agent.md`) - THE DOCUMENTATION GUARDIAN
-  - **Model:** Claude Sonnet 4.5 (copilot)
-  - **When to use:** After implementation completion to document changes systematically
-  - Prevents documentation proliferation by updating existing docs instead of creating new ones
-  - Maintains structured development journal with detailed implementation history
-  - Ensures documentation consistency across the project
-  - Manages changelog, version files, and module-specific documentation
-  - Enforces "dev_journal.md" entries with timestamps and executive summaries
-
-**Security Subagent Usage Guide:**
-- Use **Security-Review-subagent** first for a comprehensive security audit and to identify all vulnerabilities
-- Then use **Security-Fix-subagent** to progressively fix the identified code-level issues
-- Security-Review focuses on analysis and recommendations; Security-Fix focuses on implementation
-- Both agents work on code only (dependencies and CVEs are handled by tools like Snyk, Dependabot, SonarQube)
-
-## Key Features
-
-### � Context Conservation: The Game Changer
-
-**Why This Matters:** Traditional single-agent approaches force one model to handle everything—research, implementation, review, documentation—all within a limited context window. This quickly exhausts precious tokens on context that could be used for your actual code.
-
-**How Copilot Atlas Solves It:** By delegating tasks to specialized subagents, we radically improve context efficiency:
-
-- **Researcher agents** (Oracle, Explorer) read and analyze large codebases, returning only high-signal summaries—not the raw 50,000 lines of code
-- **Implementer agents** (Sisyphus) focus solely on the files they're modifying, not rereading the entire project architecture
-- **Reviewer agents** (Code-Review) examine only changed files, not context from the research phase
-- **The Conductor** (Atlas) orchestrates everything without ever touching the bulk of your codebase
-
-**The Result:** What would take 80-90% of a monolithic agent's context now takes 10-15%, leaving 70-80% more tokens for deeper analysis, better reasoning, and faster iterations.
+**Security Workflow:** Use Security-Review first (audit) → then Security-Fix (remediate)
 
 ---
 
-### 🔄 Parallel Agent Execution
-- Launch multiple subagents simultaneously for independent tasks
-- Explorer: 3-10 parallel searches in first batch
-- Oracle: Parallel research across multiple subsystems
+## Key Features
+
+### 🧠 Context Conservation
+
+Traditional single-agent approaches exhaust context on research. Atlas delegates:
+
+| Agent Type | Context Usage |
+|------------|---------------|
+| Explorer/Oracle | Read 50k lines → return summary |
+| Sisyphus | Focus only on files being modified |
+| Code-Review | Examine only changed files |
+| Atlas | Orchestrates without touching bulk code |
+
+**Result:** 70-80% more tokens available for actual reasoning.
+
+### 🔄 Parallel Execution
+
+- Explorer: 3-10 parallel searches per batch
+- Oracle: Parallel research across subsystems
 - Sisyphus: Parallel implementation for disjoint features
 - Maximum 10 parallel agents per phase
 
-### 🧪 Test-Driven Development
-- Every phase follows red-green-refactor cycle
-- Tests written first, run to fail, then minimal code
-- Explicit test → code → test steps in all plans
-- No manual testing unless explicitly requested
+### 🧪 E2E-First Testing
 
-### 🤝 Proper Agent Handoffs
-- VS Code Custom Agent handoff configuration
-- Prometheus → Atlas automatic handoff option
-- Each agent can declare available delegations
-- Clear handoff workflow with user approval gates
+Every feature requires at least one E2E test with real dependencies. Mocked tests are supplementary, not primary validation. See `AGENTS.md` for full testing philosophy.
 
-### 📋 Structured Planning
-- Atlas-compatible plan format
+### 📋 Structured TDD Plans
+
 - 3-10 incremental, self-contained phases
-- Open questions with options/recommendations
+- Red-green-refactor cycle per phase
 - Risk assessment and mitigation strategies
 
-## Installation
-
-1. **Clone or download this repository:**
-   ```bash
-   git clone https://github.com/prdubois/Github-Copilot-Atlas.git
-   ```
-
-2.
-  - **Option A: Copy agent files to VS Code User prompts directory:**
-    - **Windows:** `%APPDATA%\Code\User\prompts\` (or `%APPDATA%\Code - Insiders\User\prompts\` if using Insiders)
-    - **macOS:** `~/Library/Application Support/Code/User/prompts/` (or `~/Library/Application Support/Code - Insiders/User/prompts/` if using Insiders)
-    - **Linux:** `~/.config/Code/User/prompts/` (or `~/.config/Code - Insiders/User/prompts/` if using Insiders)
-  
-  - **Option B: (recommended) create a symlink between your local repo to VS Code User prompts directory:**
-   This makes it easy to pull the latest changes and get VS Code up to date.
-    - **Windows (powershell in admin mode):**
-    ```powershell   
-     # Example paths — YOU must set $profileUser correctly after locating it.
-    $profileUser = "$env:APPDATA\Code\User"   # or ...\Code - Insiders\User, or a Profiles subfolder
-    $repoAgents  = "C:\Programming\Github-Copilot-Atlas"
-
-    # create junction: profile agents -> repo agents
-    cmd /c rmdir "$profileUser\agents" 2>nul
-    cmd /c mklink /J "$profileUser\agents" "$repoAgents"
-
-3. **Reload VS Code** to recognize the new agents
+---
 
 ## Usage
 
-### Planning a Feature with Prometheus
+### Planning with Prometheus
 
 ```
-Plan a comprehensive implementation for adding user authentication to the app
+@Prometheus Plan adding user authentication to the app
 ```
 
-Prometheus will:
-1. Research the codebase (delegating to Explorer/Oracle as needed)
-2. Write a detailed TDD plan with 3-10 phases
-3. Offer to invoke Atlas automatically or let you review first
+Prometheus researches, writes a TDD plan, and offers to hand off to Atlas.
 
-### Executing a Plan with Atlas
+### Executing with Atlas
 
 ```
-Implement the plan devised by Promethus
+@Atlas Implement the plan from Prometheus
 ```
 
-OR: Accept the hand-off from Prometheus by clicking `Start implementation with Atlas`
+Atlas delegates Phase 1 → Sisyphus → Code-Review → approval → repeat.
 
-
-Atlas will:
-1. Review the plan
-2. Delegate Phase 1 implementation to Sisyphus
-3. Delegate review to Code-Review
-4. Present results and wait for commit approval
-5. Continue through all phases
-
-### Direct Research with Oracle
+### Direct Research
 
 ```
-Let @Oracle research how the database layer is structured
+@Oracle Research how the database layer is structured
 ```
 
-Oracle will:
-1. Delegate to Explorer for file discovery (if >10 files)
-2. Analyze key files and patterns
-3. Return structured findings
-
-### Quick Exploration with Explorer
-
 ```
-Let @Explorer find all files related to authentication
+@Explorer Find all files related to authentication
 ```
 
-Explorer will:
-1. Launch 3-10 parallel searches immediately
-2. Read necessary files to confirm relationships
-3. Return structured results with file list and analysis
-
-## Workflow Example
+### Workflow Example
 
 ```
-User: Prometheus, plan adding a user dashboard feature
+User: @Prometheus plan adding a user dashboard
 
 Prometheus:
   ├─ @Explorer (find UI components)
-  ├─ @Oracle (research data fetching patterns)
-  ├─ @Oracle (research state management)
-  └─ Writes plan → Offers to invoke Atlas
+  ├─ @Oracle (research data fetching)
+  └─ Writes plan → Offers Atlas handoff
 
 User: Yes, invoke Atlas
 
-Prometheus:
-  └─ Atlas, implement the plan...
-
 Atlas: Phase 1/4 - Test Infrastructure
-  └─ @Sisyphus Implement Phase 1
-      ├─ Writes tests (fail)
-      ├─ Writes minimal code
-      └─ Tests pass ✓
+  └─ @Sisyphus (tests first → code → pass)
+  └─ @Code-Review → APPROVED ✓
+  └─ @Documentation (update docs)
 
-Atlas: Reviewing Phase 1
-  └─ @Code-Review Review Phase 1
-      └─ Status: APPROVED ✓
-
-Atlas: Phase 1 complete! [commit message provided]
+Atlas: Phase 1 complete! [commit message]
 ```
+
+---
 
 ## Configuration
 
 ### Plan Directory
-Agents check for plan directory configuration:
-1. Look for `AGENTS.md` file in workspace
-2. Find plan directory specification (e.g., `.sisyphus/plans`)
-3. Default to `plans/` if not specified
 
-### Tool Requirements
-All agents declare their required tools in YAML frontmatter:
-- `agent` - For delegating to other agents
-- `edit` - File editing capabilities
-- `search` - Semantic/grep search
-- `runCommands/runTasks` - Terminal execution
-- etc.
-
-### Handoff Declarations
-Prometheus declares its handoff to Atlas:
-```yaml
-handoff:
-  - label: Start implementation with Atlas
-    agent: Atlas
-    prompt: Implement the plan
-```
+Agents check `AGENTS.md` for plan directory, defaulting to `plans/`.
 
 ### Adding Custom Agents
 
-You can extend the Atlas and Promethus agents with your own specialized agents for domain-specific tasks (e.g., database experts, API specialists, security reviewers, etc.).
-
-#### Quick Method: Let the AI Do It
-
-The fastest way to add a custom agent is to simply ask:
-
+**Quick method:**
 ```
-@Atlas Create a new subagent called Database-Expert that specializes in SQL optimization, schema design, and query analysis. Integrate it with Prometheus and Atlas so they can delegate database-related tasks to it.
+@Atlas Create a new subagent called Database-Expert that specializes in SQL optimization
 ```
 
-Atlas will:
-1. Create the agent file with proper YAML frontmatter
-2. Add it to Prometheus's research delegation list
-3. Add it to Atlas's implementation delegation list
-4. Update documentation
+**Manual method:** See "Adding Custom Agents" section below.
 
-#### Manual Method: Step-by-Step
-
-**1. Create Your Agent File**
-
-Create a new file in your prompts directory: `YourAgent-subagent.agent.md`
-
-```yaml
 ---
-description: 'Brief description of what this agent does'
-argument-hint: What kind of task to delegate (e.g., "Analyze database schema")
-tools: ['search', 'usages', 'edit', 'runCommands', ...]  # Tools your agent needs
-model: Claude Sonnet 4.5 (copilot)  # Or GPT-5.4, Gemini, etc.
----
-
-You are a [ROLE] SUBAGENT called by a parent CONDUCTOR agent.
-
-**Your specialty:** [Describe the domain expertise]
-
-**Your scope:** [Define what tasks this agent handles]
-
-**Core workflow:**
-1. [Step 1 of your agent's process]
-2. [Step 2 of your agent's process]
-3. [Return structured findings/results]
-
-[Add any additional instructions, constraints, or examples]
-```
-
-**2. Integrate with Prometheus** (for research tasks)
-
-Edit `Prometheus.agent.md` and add your agent to the research delegation section:
-
-```markdown
-**YourAgent-subagent**:
-- Provide a clear research goal related to [domain]
-- Instruct to analyze [specific aspects]
-- Tell them to return structured findings
-```
-
-Also add to Prometheus's constraints if it shouldn't delegate to your agent:
-```markdown
-- You CAN delegate to YourAgent-subagent for [domain] research
-```
-
-**3. Integrate with Atlas** (for implementation/review tasks)
-
-Edit `Atlas.agent.md`:
-
-a. Add to the subagent list at the top:
-```markdown
-6. YourAgent-subagent: THE [ROLE]. Expert in [domain expertise]
-```
-
-b. Add to the subagent instructions section:
-```markdown
-**YourAgent-subagent**:
-- Use #runSubagent to invoke for [task type] tasks
-- Provide [specific context needed]
-- Instruct to follow [workflow/principles]
-- Remind them to report back with [expected output]
-```
-
-**4. Test Your Integration**
-
-Try invoking your agent:
-```
-Let @YourAgent analyze the current database schema
-```
-
-Or through Atlas:
-```
-@Atlas Use YourAgent to optimize our SQL queries in the user service
-```
-
-**5. Document Usage** (Optional)
-
-Add an entry to the README's Specialized Subagents section describing when to use your custom agent.
-
-#### Best Practices for Custom Agents
-
-- **Single Responsibility**: Each agent should have one clear domain of expertise
-- **Clear Scope**: Define exactly what the agent does and doesn't handle
-- **Model Selection**: Choose the right model for the task (Sonnet for complex reasoning, Flash for speed, GPT for research)
-- **Tool Minimalism**: Only declare tools the agent actually needs
-- **Return Format**: Always return structured findings (not raw dumps)
-- **Parallel-Aware**: Consider if your agent can run in parallel with others
-
-#### Example Custom Agents
-
-- **Database-Expert**: Specializes in SQL optimization, schema design, and query analysis
-- **Performance-Analyzer**: Profiles code, identifies bottlenecks, suggests optimizations
-- **API-Designer**: Reviews/designs REST/GraphQL APIs, ensures consistency
-- **Documentation-Writer**: Generates comprehensive docs from code
-- **Migration-Expert**: Handles database migrations, version upgrades, refactoring
-
-**Note:** Security analysis is now built-in via Security-Review-subagent and Security-Fix-subagent.
-
-## Requirements
-
-- **VS Code Insiders** (recommended for latest agent features and bug fixes)
-- **GitHub Copilot** subscription with multi-agent support
-- **VS Code Settings:**
-  ```json
-  {
-    "chat.customAgentInSubagent.enabled": true,
-    "github.copilot.chat.responsesApiReasoningEffort": "high"
-  }
-  ```
-  - `customAgentInSubagent.enabled`: Allow subagents to use custom agents defined in a '-agents.md' file like the ones above 
-  - `responsesApiReasoningEffort`: Set to "high" for enhanced reasoning in planning agents (GPT models)
-
-## Best Practices
-
-1. **Use Prometheus for complex features** - Let it research and plan before implementation
-2. **Leverage parallel execution** - Invoke multiple Explorers/Oracles for large tasks
-3. **Trust the TDD workflow** - Each phase is self-contained with tests
-4. **Review before proceeding** - Check completed phases before moving forward
-5. **Commit frequently** - After each approved phase after properly testing and ensuring phase functionality
-6. **Delegate appropriately** - Let subagents handle heavy lifting
-
 
 ## Adding Custom Agents
 
-You can extend the Atlas and Promethus agents with your own specialized subagents for domain-specific tasks (e.g., database experts, API specialists, security reviewers, etc.).
-
-#### Quick Method: Let the AI Do It
-
-The fastest way to add a custom agent is to simply ask Atlas:
+### Quick Method
 
 ```
-@Atlas Create a new subagent called Database-Expert that specializes in SQL optimization, schema design, and query analysis. Integrate it with Prometheus and Atlas so they can delegate database-related tasks to it.
+@Atlas Create a new subagent called Database-Expert that specializes in SQL optimization, schema design, and query analysis. Integrate it with Prometheus and Atlas.
 ```
 
-Atlas will:
-1. Create the agent file with proper YAML frontmatter
-2. Add it to Prometheus's research delegation list
-3. Add it to Atlas's implementation delegation list
-4. Update documentation
+### Manual Method
 
-#### Manual Method: Step-by-Step
-
-**1. Create Your Agent File**
-
-Create a new file in your prompts directory: `YourAgent-subagent.agent.md`
+**1. Create agent file:** `YourAgent-subagent.agent.md`
 
 ```yaml
 ---
-description: 'Brief description of what this agent does'
-argument-hint: What kind of task to delegate (e.g., "Analyze database schema")
-tools: ['search', 'usages', 'edit', 'runCommands', ...]  # Tools your agent needs
-model: Claude Sonnet 4.5 (copilot)  # Or GPT-5.4, Gemini, etc.
+description: 'Brief description'
+argument-hint: What tasks to delegate
+tools: ['search', 'usages', 'edit', ...]
+model: Claude Sonnet 4.5 (copilot)
 ---
 
 You are a [ROLE] SUBAGENT called by a parent CONDUCTOR agent.
 
-**Your specialty:** [Describe the domain expertise]
-
-**Your scope:** [Define what tasks this agent handles]
+**Your specialty:** [Domain expertise]
+**Your scope:** [Task boundaries]
 
 **Core workflow:**
-1. [Step 1 of your agent's process]
-2. [Step 2 of your agent's process]
-3. [Return structured findings/results]
-
-[Add any additional instructions, constraints, or examples]
+1. [Step 1]
+2. [Step 2]
+3. Return structured findings
 ```
 
-**2. Integrate with Prometheus** (for research tasks)
-
-Edit `Prometheus.agent.md` and add your agent to the research delegation section:
-
+**2. Add to Prometheus** (research tasks):
 ```markdown
 **YourAgent-subagent**:
-- Provide a clear research goal related to [domain]
-- Instruct to analyze [specific aspects]
-- Tell them to return structured findings
+- Provide clear research goal for [domain]
+- Return structured findings
 ```
 
-Also add to Prometheus's constraints if it shouldn't delegate to your agent:
+**3. Add to Atlas** (implementation tasks):
 ```markdown
-- You CAN delegate to YourAgent-subagent for [domain] research
+6. YourAgent-subagent: THE [ROLE]. Expert in [domain]
 ```
 
-**3. Integrate with Atlas** (for implementation/review tasks)
-
-Edit `Atlas.agent.md`:
-
-a. Add to the subagent list at the top:
-```markdown
-6. YourAgent-subagent: THE [ROLE]. Expert in [domain expertise]
+**4. Test:**
+```
+@Atlas Use YourAgent to analyze the database schema
 ```
 
-b. Add to the subagent instructions section:
-```markdown
-**YourAgent-subagent**:
-- Use #runSubagent to invoke for [task type] tasks
-- Provide [specific context needed]
-- Instruct to follow [workflow/principles]
-- Remind them to report back with [expected output]
-```
+### Best Practices
 
-**4. Test Your Integration**
+- Single responsibility per agent
+- Minimize declared tools
+- Return structured findings, not raw dumps
+- Consider parallel execution compatibility
 
-Try invoking your agent through Atlas 
-```
-Let @YourAgent analyze the current database schema and optimize our SQL queries in the user service
-```
+---
 
-**5. Document Usage** (Optional)
+## Key Files
 
-Add an entry to the README's Specialized Subagents section describing when to use your custom agent.
+| File | Purpose |
+|------|---------|
+| `AtlasGPT.agent.md` | Main conductor (GPT variant) |
+| `Prometheus.agent.md` | Autonomous planner |
+| `Sisyphus-subagent.agent.md` | TDD implementer |
+| `Documentation-subagent.agent.md` | Doc hygiene |
+| `AGENTS-template.md` | **Copy to projects as `AGENTS.md`** |
 
-#### Best Practices for Custom Agents
+---
 
-- **Single Responsibility**: Each agent should have one clear domain of expertise
-- **Clear Scope**: Define exactly what the agent does and doesn't handle
-- **Model Selection**: Choose the right model for the task (Sonnet for complex reasoning, Flash for speed, GPT for research)
-- **Tool Minimalism**: Only declare tools the agent actually needs
-- **Return Format**: Always return structured findings (not raw dumps)
-- **Parallel-Aware**: Consider if your agent can run in parallel with others
+## Requirements
 
-#### Example Custom Agents
+- **VS Code Insiders** (recommended)
+- **GitHub Copilot** with multi-agent support
+- **Settings:**
+  - `chat.customAgentInSubagent.enabled`: true
+  - `github.copilot.chat.responsesApiReasoningEffort`: "high" (for Prometheus)
 
-- **Database-Expert**: Specializes in SQL optimization, schema design, and query analysis
-- **Performance-Analyzer**: Profiles code, identifies bottlenecks, suggests optimizations
-- **API-Designer**: Reviews/designs REST/GraphQL APIs, ensures consistency
-- **Documentation-Writer**: Generates comprehensive docs from code
-- **Migration-Expert**: Handles database migrations, version upgrades, refactoring
+---
 
-**Note:** Security analysis is now built-in via Security-Review-subagent and Security-Fix-subagent.
+## Best Practices
 
-## License
+1. **Use Prometheus for complex features** — research and plan before implementing
+2. **Leverage parallel execution** — multiple Explorers/Oracles for large tasks
+3. **Trust the TDD workflow** — each phase is self-contained with tests
+4. **Review before proceeding** — check completed phases before moving forward
+5. **Commit frequently** — after each approved phase
+6. **Set up AGENTS.md** — copy template to every project you work on
 
-MIT License
-
-Copyright (c) 2026 Copilot Atlas Contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+---
 
 ## Acknowledgments
 
@@ -562,7 +310,3 @@ This project builds upon the excellent work of:
 - **[oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode)** by [code-yeongyu](https://github.com/code-yeongyu) - Inspiration for agent naming conventions and templates
 - **[Github-Copilot-Atlas](https://github.com/bigguy345/Github-Copilot-Atlas)** by [bigguy345](https://github.com/bigguy345) - The forked repo
 - **[gologic-promptops](https://github.com/gologic-ca/gologic-promptops)** by [gologic-ben](https://github.com/gologic-ben) - Prompt for the code refactoring and security subagents
-
----
-
-**Note:** These agents are designed to work together. While individual agents can be used standalone, the full power comes from Atlas orchestrating the complete workflow with intelligent delegation and parallel execution.

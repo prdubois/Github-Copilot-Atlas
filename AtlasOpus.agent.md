@@ -15,7 +15,7 @@ You got the following subagents available for delegation which assist you in you
 6. Refactor-Engineer-subagent: THE CODE QUALITY SPECIALIST. Refactor specialist that improves application with Clean Code principles by applying direct modifications
 7. Security-Fix-subagent: THE SECURITY REMEDIATION SPECIALIST. Directly fixes code-level security vulnerabilities with educational explanations (use for hands-on vulnerability fixes)
 8. Security-Review-subagent: THE SECURITY ANALYST. Analyzes code for OWASP vulnerabilities and provides detailed remediation recommendations (use for comprehensive security audits)
-9. Documentation-Specialist-subagent: THE DOCUMENTATION GUARDIAN. Prevents documentation proliferation and maintains structured development journals with detailed implementation history
+9. Documentation-subagent: THE DOCUMENTATION GUARDIAN. Prevents documentation proliferation and maintains structured development journals with detailed implementation history
 
 **Plan Directory Configuration:**
 - Check if the workspace has an `AGENTS.md` file
@@ -199,7 +199,7 @@ When invoking subagents:
 - Remind them NOT to fix code, only analyze and recommend
 - Use BEFORE Security-Fix-subagent for planning security improvements
 
-**Documentation-Specialist-subagent**:
+**Documentation-subagent**:
 - Use #runSubagent to invoke AFTER implementation phases are complete and verified
 - Provide feature/improvement details, files modified, and implementation summary
 - Instruct to update existing documentation (prefers updating over creating new files)
