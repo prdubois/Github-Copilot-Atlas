@@ -10,48 +10,131 @@ Custom agent prompts that work together to handle the complete software developm
 
 ---
 
-## Quick Start
+## Installation
 
-### 1. Clone the Repository
+### Step 1: Clone the Repository
 
 ```bash
 git clone https://github.com/prdubois/Github-Copilot-Atlas.git
 ```
 
-### 2. Install Agent Files
+### Step 2: Locate Your VS Code Prompts Directory
 
-**Recommended: Create symlinks** (easy updates via git pull)
+VS Code stores custom agents in a `prompts` folder inside your user data directory.
 
-**Windows (PowerShell as Admin):**
+| OS | Path |
+|----|------|
+| **Windows** | `%APPDATA%\Code\User\prompts\` |
+| **Windows (Insiders)** | `%APPDATA%\Code - Insiders\User\prompts\` |
+| **macOS** | `~/Library/Application Support/Code/User/prompts/` |
+| **macOS (Insiders)** | `~/Library/Application Support/Code - Insiders/User/prompts/` |
+| **Linux** | `~/.config/Code/User/prompts/` |
+| **Linux (Insiders)** | `~/.config/Code - Insiders/User/prompts/` |
+
+**To find your exact path on Windows:**
 ```powershell
-# Set your paths
-$profileUser = "$env:APPDATA\Code\User"   # or ...\Code - Insiders\User
-$repoAgents  = "C:\path\to\Github-Copilot-Atlas"
+# This will show you the full path
+echo "$env:APPDATA\Code\User\prompts"
+```
 
-# Create junction
-cmd /c rmdir "$profileUser\agents" 2>nul
-cmd /c mklink /J "$profileUser\agents" "$repoAgents"
+### Step 3: Install Agent Files
+
+Choose **ONE** of the following methods:
+
+---
+
+#### Option A: Simple Copy (Easiest)
+
+Just copy all `.agent.md` files from the cloned repo to your prompts directory.
+
+**Windows (PowerShell):**
+```powershell
+# Navigate to where you cloned the repo
+cd C:\path\to\Github-Copilot-Atlas
+
+# Create prompts folder if it doesn't exist
+New-Item -ItemType Directory -Path "$env:APPDATA\Code\User\prompts" -Force
+
+# Copy all agent files
+Copy-Item *.agent.md "$env:APPDATA\Code\User\prompts\"
 ```
 
 **macOS/Linux:**
 ```bash
-# Set your paths
-PROFILE_USER="$HOME/Library/Application Support/Code/User"  # macOS
-# PROFILE_USER="$HOME/.config/Code/User"                    # Linux
+# Navigate to where you cloned the repo
+cd /path/to/Github-Copilot-Atlas
 
-REPO_AGENTS="/path/to/Github-Copilot-Atlas"
+# Create prompts folder if it doesn't exist
+mkdir -p ~/Library/Application\ Support/Code/User/prompts  # macOS
+# mkdir -p ~/.config/Code/User/prompts                      # Linux
 
-# Create symlink
-rm -rf "$PROFILE_USER/agents"
-ln -s "$REPO_AGENTS" "$PROFILE_USER/agents"
+# Copy all agent files
+cp *.agent.md ~/Library/Application\ Support/Code/User/prompts/  # macOS
+# cp *.agent.md ~/.config/Code/User/prompts/                       # Linux
 ```
 
-**Alternative: Copy files directly** to VS Code prompts directory:
-- **Windows:** `%APPDATA%\Code\User\prompts\`
-- **macOS:** `~/Library/Application Support/Code/User/prompts/`
-- **Linux:** `~/.config/Code/User/prompts/`
+**Downside:** When you `git pull` updates, you must copy files again.
 
-### 3. Configure VS Code Settings
+---
+
+#### Option B: Symlink (Recommended for Easy Updates)
+
+Create a symbolic link so VS Code reads directly from your git repo. When you `git pull`, VS Code automatically sees the updates.
+
+**Windows (PowerShell as Administrator):**
+
+> ⚠️ **Must run PowerShell as Administrator** — right-click PowerShell → "Run as administrator"
+
+```powershell
+# Set these two paths for YOUR system:
+$repoPath = "C:\Programming\Github-Copilot-Atlas"           # Where you cloned the repo
+$promptsPath = "$env:APPDATA\Code\User\prompts"            # VS Code prompts folder
+
+# Remove existing prompts folder if it exists
+if (Test-Path $promptsPath) {
+    Remove-Item $promptsPath -Recurse -Force
+}
+
+# Create symbolic link (junction)
+cmd /c mklink /J "$promptsPath" "$repoPath"
+
+# Verify it worked
+if (Test-Path "$promptsPath\AtlasGPT.agent.md") {
+    Write-Host "✅ Success! Symlink created." -ForegroundColor Green
+} else {
+    Write-Host "❌ Failed. Check your paths." -ForegroundColor Red
+}
+```
+
+**macOS/Linux:**
+```bash
+# Set these two paths for YOUR system:
+REPO_PATH="/path/to/Github-Copilot-Atlas"
+PROMPTS_PATH="$HOME/Library/Application Support/Code/User/prompts"  # macOS
+# PROMPTS_PATH="$HOME/.config/Code/User/prompts"                    # Linux
+
+# Remove existing prompts folder if it exists
+rm -rf "$PROMPTS_PATH"
+
+# Create symbolic link
+ln -s "$REPO_PATH" "$PROMPTS_PATH"
+
+# Verify it worked
+ls "$PROMPTS_PATH"/*.agent.md
+```
+
+**To update agents later:**
+```bash
+cd /path/to/Github-Copilot-Atlas
+git pull
+# That's it! VS Code will see the new files automatically.
+```
+
+---
+
+### Step 4: Configure VS Code Settings
+
+Open VS Code settings (JSON) and add:
 
 ```json
 {
@@ -60,26 +143,33 @@ ln -s "$REPO_AGENTS" "$PROFILE_USER/agents"
 }
 ```
 
-### 4. Set Up AGENTS.md in Your Projects
+### Step 5: Reload VS Code
 
-Copy the template to each project you work on:
+Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac) → type "Reload Window" → Enter.
+
+### Step 6: Verify Installation
+
+In VS Code, open Copilot Chat and type:
+```
+@Atlas hello
+```
+
+If Atlas responds, you're all set!
+
+---
+
+## Setting Up AGENTS.md in Your Projects
+
+For each project you work on, copy the template:
 
 ```bash
 cp AGENTS-template.md /path/to/your/project/AGENTS.md
 ```
 
 **Important:**
-- Rename to `AGENTS.md` (uppercase, like README.md)
+- Rename to `AGENTS.md` (uppercase)
 - Place in project root
-- Do NOT modify — project-specific details belong in your project's `README.md`
-
-The `AGENTS.md` file instructs all agents to:
-- Read `README.md` first (mandatory)
-- Follow E2E-first testing philosophy
-- Prefer updating docs over creating new files
-- Maintain dev journals for implementation history
-
-### 5. Reload VS Code
+- Don't modify — project-specific details go in your project's `README.md`
 
 ---
 
@@ -196,23 +286,6 @@ Atlas: Phase 1 complete! [commit message]
 
 ---
 
-## Configuration
-
-### Plan Directory
-
-Agents check `AGENTS.md` for plan directory, defaulting to `plans/`.
-
-### Adding Custom Agents
-
-**Quick method:**
-```
-@Atlas Create a new subagent called Database-Expert that specializes in SQL optimization
-```
-
-**Manual method:** See "Adding Custom Agents" section below.
-
----
-
 ## Adding Custom Agents
 
 ### Quick Method
@@ -244,29 +317,9 @@ You are a [ROLE] SUBAGENT called by a parent CONDUCTOR agent.
 3. Return structured findings
 ```
 
-**2. Add to Prometheus** (research tasks):
-```markdown
-**YourAgent-subagent**:
-- Provide clear research goal for [domain]
-- Return structured findings
-```
+**2. Add to Prometheus** (for research tasks) and **Atlas** (for implementation tasks)
 
-**3. Add to Atlas** (implementation tasks):
-```markdown
-6. YourAgent-subagent: THE [ROLE]. Expert in [domain]
-```
-
-**4. Test:**
-```
-@Atlas Use YourAgent to analyze the database schema
-```
-
-### Best Practices
-
-- Single responsibility per agent
-- Minimize declared tools
-- Return structured findings, not raw dumps
-- Consider parallel execution compatibility
+**3. Test:** `@Atlas Use YourAgent to analyze the database schema`
 
 ---
 
@@ -303,10 +356,28 @@ You are a [ROLE] SUBAGENT called by a parent CONDUCTOR agent.
 
 ---
 
+## Troubleshooting
+
+### Agents not appearing in VS Code
+
+1. Verify files are in the correct prompts directory
+2. Check file extension is `.agent.md` (not `.md` or `.txt`)
+3. Reload VS Code window
+4. Check VS Code settings have `chat.customAgentInSubagent.enabled: true`
+
+### Symlink not working (Windows)
+
+- Must run PowerShell as **Administrator**
+- Use `cmd /c mklink /J` (junction), not `mklink /D` (directory symlink)
+- Verify paths don't have typos
+
+### "Agent not found" errors
+
+- Ensure you're using the correct agent name (e.g., `@Atlas` not `@AtlasGPT`)
+- Check that the agent file has valid YAML frontmatter
+
+---
+
 ## Acknowledgments
 
-This project builds upon the excellent work of:
-- **[copilot-orchestra](https://github.com/ShepAlderson/copilot-orchestra)** by [ShepAlderson](https://github.com/ShepAlderson) - Foundation and concept for multi-agent orchestration
-- **[oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode)** by [code-yeongyu](https://github.com/code-yeongyu) - Inspiration for agent naming conventions and templates
-- **[Github-Copilot-Atlas](https://github.com/bigguy345/Github-Copilot-Atlas)** by [bigguy345](https://github.com/bigguy345) - The forked repo
-- **[gologic-promptops](https://github.com/gologic-ca/gologic-promptops)** by [gologic-ben](https://github.com/gologic-ben) - Prompt for the code refactoring and security subagents
+Forked from [bigguy345/Github-Copilot-Atlas](https://github.com/bigguy345/Github-Copilot-Atlas), built upon [copilot-orchestra](https://github.com/ShepAlderson/copilot-orchestra) by ShepAlderson, with naming conventions inspired by [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode).
