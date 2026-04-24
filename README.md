@@ -179,7 +179,7 @@ cp AGENTS-template.md /path/to/your/project/AGENTS.md
 
 | Agent | Model | Role |
 |-------|-------|------|
-| **AtlasSonnet** | Claude Sonnet 4.5 | Orchestrator (balanced) |
+| **AtlasSonnet** | Claude Sonnet 4.6 | Orchestrator (balanced) |
 | **AtlasOpus** | Claude Opus 4.6 | Orchestrator (complex tasks) |
 | **AtlasGPT** | GPT-5.4 | Orchestrator (research-heavy) |
 | **Prometheus** | GPT-5.4 High | Autonomous planner → hands off to Atlas |
@@ -196,9 +196,12 @@ cp AGENTS-template.md /path/to/your/project/AGENTS.md
 | **Refactor-Engineer** | GPT-5.3-Codex | Clean Code principles, SOLID |
 | **Security-Review** | GPT-5.3-Codex | OWASP analysis, threat modeling |
 | **Security-Fix** | GPT-5.3-Codex | Vulnerability remediation |
-| **Documentation** | Claude Sonnet 4.5 | Doc hygiene, dev journals |
+| **Documentation** | Claude Sonnet 4.6 | Doc hygiene, dev journals |
+| **PowerBI** | GPT-5.3-Codex | Power BI models, DAX, TMDL via MCP |
 
 **Security Workflow:** Use Security-Review first (audit) → then Security-Fix (remediate)
+
+**Power BI Workflow:** Use PowerBI-subagent for any Power BI Desktop or Fabric semantic model tasks (requires the [Power BI Model MCP server](https://github.com/nicktrogdon/powerbi-model) extension)
 
 ---
 
@@ -303,7 +306,7 @@ Atlas: Phase 1 complete! [commit message]
 description: 'Brief description'
 argument-hint: What tasks to delegate
 tools: ['search', 'usages', 'edit', ...]
-model: Claude Sonnet 4.5 (copilot)
+model: Claude Sonnet 4.6 (copilot)
 ---
 
 You are a [ROLE] SUBAGENT called by a parent CONDUCTOR agent.
@@ -331,6 +334,7 @@ You are a [ROLE] SUBAGENT called by a parent CONDUCTOR agent.
 | `Prometheus.agent.md` | Autonomous planner |
 | `Sisyphus-subagent.agent.md` | TDD implementer |
 | `Documentation-subagent.agent.md` | Doc hygiene |
+| `PowerBI-subagent.agent.md` | Power BI semantic models via MCP |
 | `AGENTS-template.md` | **Copy to projects as `AGENTS.md`** |
 
 ---

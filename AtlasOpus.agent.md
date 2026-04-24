@@ -16,6 +16,7 @@ You got the following subagents available for delegation which assist you in you
 7. Security-Fix-subagent: THE SECURITY REMEDIATION SPECIALIST. Directly fixes code-level security vulnerabilities with educational explanations (use for hands-on vulnerability fixes)
 8. Security-Review-subagent: THE SECURITY ANALYST. Analyzes code for OWASP vulnerabilities and provides detailed remediation recommendations (use for comprehensive security audits)
 9. Documentation-subagent: THE DOCUMENTATION GUARDIAN. Prevents documentation proliferation and maintains structured development journals with detailed implementation history
+10. PowerBI-subagent: THE POWER BI SPECIALIST. Expert in Power BI semantic models, DAX queries, data modeling, measures, relationships, and TMDL/TMSL operations via MCP (use for any Power BI Desktop or Fabric model tasks)
 
 **Plan Directory Configuration:**
 - Check if the workspace has an `AGENTS.md` file
