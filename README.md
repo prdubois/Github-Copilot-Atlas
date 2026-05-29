@@ -1,160 +1,139 @@
 # Copilot Atlas
 
-A multi-agent orchestration system for VS Code Copilot that enables complex software development workflows through intelligent agent delegation and parallel execution.
-
-> **Note:** Best supported on VS Code Insiders (as of January 2026) for access to the latest agent orchestration features.
-
-## Overview
-
-Custom agent prompts that work together to handle the complete software development lifecycle: **Planning → Implementation → Review → Commit**. The system uses a conductor-delegate pattern where Atlas coordinates specialized subagents.
+> Multi-agent orchestration system for GitHub Copilot in VS Code — forked from [bigguy345/Github-Copilot-Atlas](https://github.com/bigguy345/Github-Copilot-Atlas), built upon [copilot-orchestra](https://github.com/ShepAlderson/copilot-orchestra), with naming conventions inspired by [oh-my-opencode](https://github.com/nicололau/oh-my-opencode).
 
 ---
 
-## Installation
+## Two Operating Modes
 
-### Step 1: Clone the Repository
+This repo supports two parallel configurations you can switch between using a symlink:
 
-```bash
-git clone https://github.com/prdubois/Github-Copilot-Atlas.git
-```
+| Mode | Folder | Orchestrator Model | Worker Model | Free Model |
+|------|--------|--------------------|--------------|------------|
+| **GHCP** | `agents-ghcp/` | Claude Sonnet/Opus 4.6 / GPT-5.4 | GPT-5.3-Codex | — |
+| **BYOK** | `agents-byok/` | DeepSeek Pro 4 | DeepSeek Flash 4 | GPT-5-mini |
 
-### Step 2: Locate Your VS Code Prompts Directory
+### Switching Modes
 
-VS Code stores custom agents in a `prompts` folder inside your user data directory.
-
-| OS | Path |
-|----|------|
-| **Windows** | `%APPDATA%\Code\User\prompts\` |
-| **Windows (Insiders)** | `%APPDATA%\Code - Insiders\User\prompts\` |
-| **macOS** | `~/Library/Application Support/Code/User/prompts/` |
-| **macOS (Insiders)** | `~/Library/Application Support/Code - Insiders/User/prompts/` |
-| **Linux** | `~/.config/Code/User/prompts/` |
-| **Linux (Insiders)** | `~/.config/Code - Insiders/User/prompts/` |
-
-**To find your exact path on Windows:**
-```powershell
-# This will show you the full path
-echo "$env:APPDATA\Code\User\prompts"
-```
-
-### Step 3: Install Agent Files
-
-Choose **ONE** of the following methods:
-
----
-
-#### Option A: Simple Copy (Easiest)
-
-Just copy all `.agent.md` files from the cloned repo to your prompts directory.
-
-**Windows (PowerShell):**
-```powershell
-# Navigate to where you cloned the repo
-cd C:\path\to\Github-Copilot-Atlas
-
-# Create prompts folder if it doesn't exist
-New-Item -ItemType Directory -Path "$env:APPDATA\Code\User\prompts" -Force
-
-# Copy all agent files
-Copy-Item *.agent.md "$env:APPDATA\Code\User\prompts\"
-```
-
-**macOS/Linux:**
-```bash
-# Navigate to where you cloned the repo
-cd /path/to/Github-Copilot-Atlas
-
-# Create prompts folder if it doesn't exist
-mkdir -p ~/Library/Application\ Support/Code/User/prompts  # macOS
-# mkdir -p ~/.config/Code/User/prompts                      # Linux
-
-# Copy all agent files
-cp *.agent.md ~/Library/Application\ Support/Code/User/prompts/  # macOS
-# cp *.agent.md ~/.config/Code/User/prompts/                       # Linux
-```
-
-**Downside:** When you `git pull` updates, you must copy files again.
-
----
-
-#### Option B: Symlink (Recommended for Easy Updates)
-
-Create a symbolic link so VS Code reads directly from your git repo. When you `git pull`, VS Code automatically sees the updates.
-
-**Windows (PowerShell as Administrator):**
-
-> ⚠️ **Must run PowerShell as Administrator** — right-click PowerShell → "Run as administrator"
+Use the PowerShell script to swap your VS Code prompts symlink:
 
 ```powershell
-# Set these two paths for YOUR system:
-$repoPath = "C:\Programming\Github-Copilot-Atlas"           # Where you cloned the repo
-$promptsPath = "$env:APPDATA\Code\User\prompts"            # VS Code prompts folder
+# Switch to GHCP models (uses Copilot allocation)
+./switch-agents.ps1 ghcp
 
-# Remove existing prompts folder if it exists
-if (Test-Path $promptsPath) {
-    Remove-Item $promptsPath -Recurse -Force
-}
-
-# Create symbolic link (junction)
-cmd /c mklink /J "$promptsPath" "$repoPath"
-
-# Verify it worked
-if (Test-Path "$promptsPath\AtlasGPT.agent.md") {
-    Write-Host "✅ Success! Symlink created." -ForegroundColor Green
-} else {
-    Write-Host "❌ Failed. Check your paths." -ForegroundColor Red
-}
+# Switch to Azure/BYOK models (uses your own keys)
+./switch-agents.ps1 byok
 ```
 
-**macOS/Linux:**
-```bash
-# Set these two paths for YOUR system:
-REPO_PATH="/path/to/Github-Copilot-Atlas"
-PROMPTS_PATH="$HOME/Library/Application Support/Code/User/prompts"  # macOS
-# PROMPTS_PATH="$HOME/.config/Code/User/prompts"                    # Linux
+The script updates the symlink at your VS Code prompts folder. No restart needed.
 
-# Remove existing prompts folder if it exists
-rm -rf "$PROMPTS_PATH"
+---
 
-# Create symbolic link
-ln -s "$REPO_PATH" "$PROMPTS_PATH"
+## Three-Tier Token Economy (BYOK Mode)
 
-# Verify it worked
-ls "$PROMPTS_PATH"/*.agent.md
+The BYOK mode uses a cost-optimized three-tier architecture:
+
+| Tier | Model | Cost | Agents | Role |
+|------|-------|------|--------|------|
+| 🔴 **Orchestrator** | DeepSeek Pro 4 | Expensive | Atlas, Prometheus | Planning, decomposition, decisions |
+| 🟡 **Worker** | DeepSeek Flash 4 | Moderate | Sisyphus, Frontend-Engineer, Refactor-Engineer, Code-Review, Security-Fix, Security-Review, PowerBI | Code generation, review |
+| 🟢 **Free** | GPT-5-mini | Free | Oracle, Explorer, Documentation | Research, exploration, docs |
+
+**Design principle:** Atlas delegates to free-tier agents (Oracle, Explorer, Documentation) when the task involves broad exploration, multi-file research, or documentation updates — work that would otherwise consume many orchestrator tokens. For trivial lookups or single-file reads already in context, Atlas handles them directly to avoid the overhead of briefing a subagent.
+
+---
+
+## Architecture
+
+### Primary Agents (Orchestrators)
+
+| Agent | Model (GHCP) | Model (BYOK) | Role |
+|-------|--------------|--------------|------|
+| **AtlasSonnet** | Claude Sonnet 4.6 | — | Orchestrator (balanced) |
+| **AtlasOpus** | Claude Opus 4.6 | — | Orchestrator (complex tasks) |
+| **AtlasGPT** | GPT-5.4 | — | Orchestrator (research-heavy) |
+| **AtlasDeepSeek** | — | DeepSeek Pro 4 | Orchestrator (BYOK) |
+| **Prometheus** | GPT-5.4 High | DeepSeek Pro 4 | Autonomous planner → hands off to Atlas |
+
+### Specialized Subagents
+
+| Agent | Model (GHCP) | Model (BYOK) | Tier | Specialty |
+|-------|--------------|--------------|------|-----------|
+| **Oracle** | GPT-5.4 | GPT-5-mini | 🟢 Free | Context gathering, requirements research |
+| **Explorer** | GPT-5.4 | GPT-5-mini | 🟢 Free | Codebase exploration (3-10 parallel searches) |
+| **Documentation** | Claude Sonnet 4.6 | GPT-5-mini | 🟢 Free | Doc hygiene, dev journals |
+| **Sisyphus** | GPT-5.3-Codex | DeepSeek Flash 4 | 🟡 Worker | TDD implementation, E2E-first testing |
+| **Code-Review** | GPT-5.3-Codex | DeepSeek Flash 4 | 🟡 Worker | Code quality, test coverage verification |
+| **Frontend-Engineer** | GPT-5.3-Codex | DeepSeek Flash 4 | 🟡 Worker | UI/UX, responsive design, accessibility |
+| **Refactor-Engineer** | GPT-5.3-Codex | DeepSeek Flash 4 | 🟡 Worker | Clean Code principles, SOLID |
+| **Security-Review** | GPT-5.3-Codex | DeepSeek Flash 4 | 🟡 Worker | OWASP analysis, threat modeling |
+| **Security-Fix** | GPT-5.3-Codex | DeepSeek Flash 4 | 🟡 Worker | Vulnerability remediation |
+| **PowerBI** | GPT-5.3-Codex | DeepSeek Flash 4 | 🟡 Worker | Power BI models, DAX, TMDL via MCP |
+
+**Security Workflow:** Use Security-Review first (audit) → then Security-Fix (remediate)
+
+**Power BI Workflow:** Use PowerBI-subagent for any Power BI Desktop or Fabric semantic model tasks (requires the Power BI Model MCP server extension)
+
+---
+
+## Usage
+
+### Planning with Prometheus
+
+```
+@Prometheus Plan adding user authentication to the app
 ```
 
-**To update agents later:**
-```bash
-cd /path/to/Github-Copilot-Atlas
-git pull
-# That's it! VS Code will see the new files automatically.
+Prometheus researches, writes a TDD plan, and offers to hand off to Atlas.
+
+### Executing with Atlas
+
+```
+@Atlas Implement the plan from Prometheus
+@AtlasDeepSeek Implement the plan from Prometheus   (BYOK mode)
+```
+
+Atlas delegates Phase 1 → Sisyphus → Code-Review → approval → repeat.
+
+### Direct Research
+
+```
+@Oracle Research how the database layer is structured
+@Explorer Find all files related to authentication
+```
+
+### Workflow Example
+
+```
+User: @Prometheus plan adding a user dashboard
+
+Prometheus:
+  ├─ @Explorer (find UI components)       ← FREE
+  ├─ @Oracle (research data fetching)     ← FREE
+  └─ Writes plan → Offers Atlas handoff
+
+User: Yes, invoke Atlas
+
+Atlas: Phase 1/4 - Test Infrastructure
+  ├─ @Explorer (gather current state)     ← FREE
+  └─ @Sisyphus (tests first → code → pass)
+  └─ @Code-Review → APPROVED ✓
+  └─ @Documentation (update docs)         ← FREE
+
+Atlas: Phase 1 complete! [commit message]
 ```
 
 ---
 
-### Step 4: Configure VS Code Settings
+## Key Files
 
-Open VS Code settings (JSON) and add:
-
-```json
-{
-  "chat.customAgentInSubagent.enabled": true,
-  "github.copilot.chat.responsesApiReasoningEffort": "high"
-}
-```
-
-### Step 5: Reload VS Code
-
-Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac) → type "Reload Window" → Enter.
-
-### Step 6: Verify Installation
-
-In VS Code, open Copilot Chat and type:
-```
-@Atlas hello
-```
-
-If Atlas responds, you're all set!
+| File | Purpose |
+|------|---------|
+| `agents-ghcp/` | GHCP mode agent files |
+| `agents-byok/` | BYOK mode agent files (three-tier) |
+| `switch-agents.ps1` | PowerShell script to swap symlink |
+| `generate-azure-agents.sh` | Generates BYOK variants from GHCP originals |
+| `AGENTS-template.md` | **Copy to projects as `AGENTS.md`** |
 
 ---
 
@@ -173,129 +152,7 @@ cp AGENTS-template.md /path/to/your/project/AGENTS.md
 
 ---
 
-## Architecture
-
-### Primary Agents
-
-| Agent | Model | Role |
-|-------|-------|------|
-| **AtlasSonnet** | Claude Sonnet 4.6 | Orchestrator (balanced) |
-| **AtlasOpus** | Claude Opus 4.6 | Orchestrator (complex tasks) |
-| **AtlasGPT** | GPT-5.4 | Orchestrator (research-heavy) |
-| **Prometheus** | GPT-5.4 High | Autonomous planner → hands off to Atlas |
-
-### Specialized Subagents
-
-| Agent | Model | Specialty |
-|-------|-------|-----------|
-| **Oracle** | GPT-5.4 | Context gathering, requirements research |
-| **Sisyphus** | GPT-5.3-Codex | TDD implementation, E2E-first testing |
-| **Explorer** | GPT-5.4 | Codebase exploration (3-10 parallel searches) |
-| **Code-Review** | GPT-5.3-Codex | Code quality, test coverage verification |
-| **Frontend-Engineer** | GPT-5.3-Codex | UI/UX, responsive design, accessibility |
-| **Refactor-Engineer** | GPT-5.3-Codex | Clean Code principles, SOLID |
-| **Security-Review** | GPT-5.3-Codex | OWASP analysis, threat modeling |
-| **Security-Fix** | GPT-5.3-Codex | Vulnerability remediation |
-| **Documentation** | Claude Sonnet 4.6 | Doc hygiene, dev journals |
-| **PowerBI** | GPT-5.3-Codex | Power BI models, DAX, TMDL via MCP |
-
-**Security Workflow:** Use Security-Review first (audit) → then Security-Fix (remediate)
-
-**Power BI Workflow:** Use PowerBI-subagent for any Power BI Desktop or Fabric semantic model tasks (requires the [Power BI Model MCP server](https://github.com/nicktrogdon/powerbi-model) extension)
-
----
-
-## Key Features
-
-### 🧠 Context Conservation
-
-Traditional single-agent approaches exhaust context on research. Atlas delegates:
-
-| Agent Type | Context Usage |
-|------------|---------------|
-| Explorer/Oracle | Read 50k lines → return summary |
-| Sisyphus | Focus only on files being modified |
-| Code-Review | Examine only changed files |
-| Atlas | Orchestrates without touching bulk code |
-
-**Result:** 70-80% more tokens available for actual reasoning.
-
-### 🔄 Parallel Execution
-
-- Explorer: 3-10 parallel searches per batch
-- Oracle: Parallel research across subsystems
-- Sisyphus: Parallel implementation for disjoint features
-- Maximum 10 parallel agents per phase
-
-### 🧪 E2E-First Testing
-
-Every feature requires at least one E2E test with real dependencies. Mocked tests are supplementary, not primary validation. See `AGENTS.md` for full testing philosophy.
-
-### 📋 Structured TDD Plans
-
-- 3-10 incremental, self-contained phases
-- Red-green-refactor cycle per phase
-- Risk assessment and mitigation strategies
-
----
-
-## Usage
-
-### Planning with Prometheus
-
-```
-@Prometheus Plan adding user authentication to the app
-```
-
-Prometheus researches, writes a TDD plan, and offers to hand off to Atlas.
-
-### Executing with Atlas
-
-```
-@Atlas Implement the plan from Prometheus
-```
-
-Atlas delegates Phase 1 → Sisyphus → Code-Review → approval → repeat.
-
-### Direct Research
-
-```
-@Oracle Research how the database layer is structured
-```
-
-```
-@Explorer Find all files related to authentication
-```
-
-### Workflow Example
-
-```
-User: @Prometheus plan adding a user dashboard
-
-Prometheus:
-  ├─ @Explorer (find UI components)
-  ├─ @Oracle (research data fetching)
-  └─ Writes plan → Offers Atlas handoff
-
-User: Yes, invoke Atlas
-
-Atlas: Phase 1/4 - Test Infrastructure
-  └─ @Sisyphus (tests first → code → pass)
-  └─ @Code-Review → APPROVED ✓
-  └─ @Documentation (update docs)
-
-Atlas: Phase 1 complete! [commit message]
-```
-
----
-
 ## Adding Custom Agents
-
-### Quick Method
-
-```
-@Atlas Create a new subagent called Database-Expert that specializes in SQL optimization, schema design, and query analysis. Integrate it with Prometheus and Atlas.
-```
 
 ### Manual Method
 
@@ -320,68 +177,24 @@ You are a [ROLE] SUBAGENT called by a parent CONDUCTOR agent.
 3. Return structured findings
 ```
 
-**2. Add to Prometheus** (for research tasks) and **Atlas** (for implementation tasks)
+**2. Add to both `agents-ghcp/` and `agents-byok/`** (with appropriate model for each)
 
 **3. Test:** `@Atlas Use YourAgent to analyze the database schema`
-
----
-
-## Key Files
-
-| File | Purpose |
-|------|---------|
-| `AtlasGPT.agent.md` | Main conductor (GPT variant) |
-| `Prometheus.agent.md` | Autonomous planner |
-| `Sisyphus-subagent.agent.md` | TDD implementer |
-| `Documentation-subagent.agent.md` | Doc hygiene |
-| `PowerBI-subagent.agent.md` | Power BI semantic models via MCP |
-| `AGENTS-template.md` | **Copy to projects as `AGENTS.md`** |
-
----
-
-## Requirements
-
-- **VS Code Insiders** (recommended)
-- **GitHub Copilot** with multi-agent support
-- **Settings:**
-  - `chat.customAgentInSubagent.enabled`: true
-  - `github.copilot.chat.responsesApiReasoningEffort`: "high" (for Prometheus)
 
 ---
 
 ## Best Practices
 
 1. **Use Prometheus for complex features** — research and plan before implementing
-2. **Leverage parallel execution** — multiple Explorers/Oracles for large tasks
+2. **Leverage parallel execution** — multiple Explorers/Oracles for large tasks (especially in BYOK mode — they're free!)
 3. **Trust the TDD workflow** — each phase is self-contained with tests
 4. **Review before proceeding** — check completed phases before moving forward
 5. **Commit frequently** — after each approved phase
 6. **Set up AGENTS.md** — copy template to every project you work on
-
----
-
-## Troubleshooting
-
-### Agents not appearing in VS Code
-
-1. Verify files are in the correct prompts directory
-2. Check file extension is `.agent.md` (not `.md` or `.txt`)
-3. Reload VS Code window
-4. Check VS Code settings have `chat.customAgentInSubagent.enabled: true`
-
-### Symlink not working (Windows)
-
-- Must run PowerShell as **Administrator**
-- Use `cmd /c mklink /J` (junction), not `mklink /D` (directory symlink)
-- Verify paths don't have typos
-
-### "Agent not found" errors
-
-- Ensure you're using the correct agent name (e.g., `@Atlas` not `@AtlasGPT`)
-- Check that the agent file has valid YAML frontmatter
+7. **In BYOK mode, prefer free agents** — let Oracle/Explorer/Documentation do all the heavy lifting
 
 ---
 
 ## Acknowledgments
 
-Forked from [bigguy345/Github-Copilot-Atlas](https://github.com/bigguy345/Github-Copilot-Atlas), built upon [copilot-orchestra](https://github.com/ShepAlderson/copilot-orchestra) by ShepAlderson, with naming conventions inspired by [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode).
+Forked from [bigguy345/Github-Copilot-Atlas](https://github.com/bigguy345/Github-Copilot-Atlas), built upon [copilot-orchestra](https://github.com/ShepAlderson/copilot-orchestra) by ShepAlderson, with naming conventions inspired by [oh-my-opencode](https://github.com/nicololau/oh-my-opencode).
