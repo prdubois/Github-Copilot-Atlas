@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../gologic-promptops"
+		},
+		{
+			"path": "../mw-ai-sales-assistant"
+		}
+	],
+	"settings": {}
+}

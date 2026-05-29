@@ -1,9 +1,11 @@
 # switch-agents.ps1
-# Usage: ./switch-agents.ps1 -Mode ghcp
-#        ./switch-agents.ps1 -Mode byok
+# Usage: ./switch-agents.ps1 ghcp
+#        ./switch-agents.ps1 byok
+#        ./switch-agents.ps1 hybrid
 
 param(
-    [ValidateSet("ghcp", "byok")]
+    [Parameter(Position = 0)]
+    [ValidateSet("ghcp", "byok", "hybrid")]
     [string]$Mode = "ghcp"
 )
 

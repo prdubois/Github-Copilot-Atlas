@@ -1,7 +1,7 @@
 ---
 description: 'Execute implementation tasks delegated by the CONDUCTOR agent.'
 tools: ['edit', 'search', 'runCommands', 'runTasks', 'usages', 'problems', 'changes', 'testFailure', 'fetch', 'githubRepo', 'todos', 'agent']
-model: Gemini 3.5 Flash (copilot)
+model: DeepSeek-V4-Flash (customendpoint)
 ---
 You are an IMPLEMENTATION SUBAGENT. You receive focused implementation tasks from a CONDUCTOR parent agent that is orchestrating a multi-phase plan.
 
