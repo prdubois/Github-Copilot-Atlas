@@ -2,7 +2,7 @@
 description: 'Frontend/UI specialist for implementing user interfaces, styling, and responsive layouts'
 argument-hint: Implement frontend feature, component, or UI improvement
 tools: ['edit', 'search', 'runCommands', 'runTasks', 'usages', 'problems', 'changes', 'testFailure', 'fetch', 'githubRepo', 'todos']
-model: DeepSeek-V4-Pro (customendpoint)
+model: DeepSeek-V4-Pro (azure)
 ---
 You are a FRONTEND UI/UX ENGINEER SUBAGENT called by a parent CONDUCTOR agent (Atlas).
 

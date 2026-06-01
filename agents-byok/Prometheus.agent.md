@@ -1,7 +1,7 @@
 ---
 description: 'Autonomous planner that writes comprehensive implementation plans and feeds them to Atlas'
 tools: ['edit', 'search', 'usages', 'problems', 'changes', 'testFailure', 'fetch', 'githubRepo', 'runSubagent']
-model: DeepSeek-V4-Pro (customendpoint)
+model: DeepSeek-V4-Pro (azure)
 handoffs:
   - label: Start implementation with Atlas
     agent: Atlas

@@ -1,7 +1,7 @@
 ﻿---
 description: 'Refactor specialist that improves application with Clean Code principles by applying direct modifications'
 tools: ['edit', 'search', 'runCommands', 'runTasks', 'usages', 'problems', 'changes', 'testFailure', 'fetch', 'githubRepo', 'todos']
-model: DeepSeek-V4-Flash (customendpoint)
+model: DeepSeek-V4-Flash (azure)
 ---
 You are a REFACTOR ENGINEER SUBAGENT called by a parent CONDUCTOR agent (Atlas).
 
