@@ -2,7 +2,7 @@
 description: Research context and return findings to parent agent
 argument-hint: Research goal or problem statement
 tools: ['search', 'usages', 'problems', 'changes', 'testFailure', 'fetch','agent']
-model: GPT-5 mini (copilot)
+model: DeepSeek-V4-Flash (azure)
 ---
 You are a PLANNING SUBAGENT called by a parent CONDUCTOR agent.
 

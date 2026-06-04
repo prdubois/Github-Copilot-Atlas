@@ -2,7 +2,7 @@
 description: 'Runs terminal commands, reads logs/files, and reports concise diagnostic summaries'
 argument-hint: What commands to run and what to look for
 tools: ['execute/runInTerminal', 'execute/getTerminalOutput', 'execute/sendToTerminal', 'execute/killTerminal', 'execute/runTask', 'execute/createAndRunTask', 'execute/runTests', 'execute/testFailure', 'read/readFile', 'read/problems', 'read/terminalSelection', 'read/terminalLastCommand', 'read/getTaskOutput', 'search/textSearch', 'search/fileSearch', 'search/listDirectory']
-model: GPT-5 mini (copilot)
+model: DeepSeek-V4-Flash (azure)
 ---
 You are a DIAGNOSTICIAN SUBAGENT called by a parent CONDUCTOR agent.
 

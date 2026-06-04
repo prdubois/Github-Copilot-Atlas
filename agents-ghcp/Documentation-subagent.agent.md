@@ -2,7 +2,7 @@
 description: 'Documentation specialist that prevents doc proliferation and maintains structured development journals'
 argument-hint: Document feature implementation, update existing docs, or create structured dev journal entries
 tools: ['search', 'usages', 'edit', 'fileSearch', 'textSearch', 'listDirectory', 'readFile']
-model: GPT-5 mini (copilot)
+model: GPT-5.4 mini (copilot)
 ---
 You are a DOCUMENTATION SUBAGENT called by a parent CONDUCTOR agent.
 
