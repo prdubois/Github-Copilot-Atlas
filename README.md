@@ -125,6 +125,86 @@ DeepSeek models on Azure **do not support input caching**. The orchestrator re-s
 
 ---
 
+## Prompt Cache Optimization
+
+Prompt caching is critical for multi-turn orchestration. Cached input tokens cost **90% less** (Anthropic/OpenAI) or **75% less** (Gemini). A cache miss on a 340K-token conversation can cost 10× more than a hit.
+
+### How Prefix Caching Works
+
+All major providers (Anthropic, OpenAI, Gemini) use **prefix-based caching**: the API matches the beginning of each request against recently cached content. If your request shares an identical prefix with a prior request, those tokens are served from cache. **Any change at position N invalidates everything after it.**
+
+The prompt structure sent by GHCP on each turn is roughly:
+
+```
+[System prompt] → [Agent definitions] → [Tool schemas] → [Conversation history] → [Latest message]
+```
+
+A mutation in any early section (system prompt, agent list, tools) destroys the cache for the entire conversation history below it.
+
+### Cache TTL by Provider
+
+| Provider | Default TTL | Extended TTL | Cached discount |
+|----------|-------------|--------------|-----------------|
+| Anthropic (Claude) | ~5 min (resets on hit) | 1 hour (2× write cost) | 90% off input |
+| OpenAI (GPT) | 5-10 min | **24 hours** (`prompt_cache_retention`) | 90% off input |
+| Google (Gemini) | Short/undisclosed (implicit) | Up to unlimited (explicit) | 75% off input |
+
+**Recommendation:** For long Atlas sessions, prefer OpenAI models (GPT-5.4/5.5) as orchestrators. The 24-hour cache retention means you can take breaks without losing your cached prefix.
+
+### Optimizations Applied in This Repo
+
+#### 1. Explicit Agent List (prevents lazy resolution)
+
+```yaml
+# BAD — GHCP lazily resolves agents on first reference, mutating the prefix mid-session
+agents: ["*"]
+
+# GOOD — all agents resolved at session start, prefix stays stable
+agents: ["Daedalus-subagent", "Odysseus-subagent", "Code-Review-subagent", ...]
+```
+
+#### 2. Minimal Orchestrator Tool List
+
+The orchestrator declares only ~16 tools it actually calls directly. All other tools (browser, terminal, bicep, notebooks) are available to subagents in their isolated contexts. This:
+- Removes ~34K characters of tool schemas from the prefix
+- Eliminates tool search promotion/demotion mutations
+
+#### 3. Deferred `<repoMemory>` Writes
+
+GHCP pins memory content near the top of the prompt. Mid-phase memory writes change the prefix and invalidate the cache for the entire conversation below. The orchestrator writes to scratchpad files during work and only commits to memory at phase boundaries.
+
+#### 4. Terminal Delegation (suppresses ambient context injection)
+
+The orchestrator never runs terminal commands directly. All execution is delegated to Diagnostician-subagent, which runs in an isolated context. This prevents GHCP from injecting changing terminal state (exit codes, output) into the orchestrator's prompt prefix.
+
+### Maintaining Cache Stability During a Session
+
+**Do:**
+- Keep the same model and effort level throughout a session
+- Let subagents handle volatile work (terminal, browser) in isolated contexts
+- Cycle the orchestrator after completing a major phase (clear chat, start fresh)
+- Use `/compact` while cache is still warm (within TTL) if context grows too large
+
+**Don't:**
+- Switch models or effort level mid-session (changes cache key)
+- Write to repoMemory during active work
+- Create or modify `.agent.md` files during a session
+- Let the orchestrator run terminal commands directly
+
+### Sync Script
+
+When updating Atlas agent prompts, use the sync script to propagate changes across all model variants while preserving each variant's `model:` line:
+
+```bash
+# Preview changes
+python sync_atlas_agents.py AtlasGPT.agent.md --dry-run
+
+# Apply to all Atlas*.agent.md in the same folder
+python sync_atlas_agents.py AtlasGPT.agent.md
+```
+
+---
+
 ## Usage
 
 ### Executing with Atlas
