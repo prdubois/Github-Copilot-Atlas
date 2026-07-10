@@ -1,7 +1,7 @@
 ---
 description: 'Execute implementation tasks delegated by the CONDUCTOR agent.'
 tools: ['edit', 'search', 'runCommands', 'runTasks', 'usages', 'problems', 'changes', 'testFailure', 'fetch', 'githubRepo', 'todos', 'agent']
-model: GPT-5.4 mini (copilot)
+model: GPT-5.6 Luna (copilot)
 ---
 You are an IMPLEMENTATION SUBAGENT. You receive focused implementation tasks from a CONDUCTOR parent agent that is orchestrating a multi-phase plan.
 

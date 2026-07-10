@@ -12,18 +12,19 @@ This repo supports three configurations you can switch between using a symlink:
 |------|--------|-------------|
 | **GHCP** 🟦 | `agents-ghcp/` | **Pure GitHub Copilot** — uses only Copilot-billed models (Claude, GPT). Best quality orchestration, but consumes your Copilot AI Credits. |
 | **BYOK** 🟩 | `agents-byok/` | **Bring Your Own Key** — uses DeepSeek + GPT via Azure endpoints. Zero Copilot quota usage. Orchestrators limited to Azure OpenAI models (caching support). |
-| **Hybrid** 🟪 | `agents-hybrid/` | **Best of both worlds** — GHCP models for orchestration, DeepSeek + GPT via Azure for subagents. Most cost-effective setup. |
+| **Hybrid** 🟪 | `agents-hybrid/` | **Best of both worlds** — GHCP models for orchestration + security, DeepSeek + GPT-5.6 via Azure for everything else. Most cost-effective setup. |
 
 ### Model Breakdown by Mode
 
-| Tier | GHCP 🟦 | BYOK 🟩 / Hybrid 🟪 |
-|------|---------|----------------------|
-| **Orchestrators** | Claude Sonnet 4.6, Claude Opus 4.8, GPT-5.4, Gemini 3.5 Flash | Azure OpenAI (GPT-5.4) for BYOK; GHCP models for Hybrid |
-| **Senior** | GPT-5.3-Codex | DeepSeek V4 Pro |
-| **Mid-Level** | GPT-5.4 mini | DeepSeek V4 Flash |
-| **Junior** | GPT-5.4 nano | *(merged into Mid-Level — same model)* |
-| **Research & Support** | GPT-5.4 nano | DeepSeek V4 Flash |
-| **Documentation** | GPT-5.4 mini | GPT-5.4 mini (Azure) |
+| Tier | GHCP 🟦 | BYOK 🟩 | Hybrid 🟪 |
+|------|---------|---------|-----------|
+| **Orchestrator** | Claude Sonnet 5, Claude Opus 4.8, GPT-5.6 Sol, GPT-5.6 Terra, Gemini 3.5 Flash | Azure OpenAI (GPT-5.6 Terra) | Claude Sonnet 5, Claude Opus 4.8, GPT-5.6 Sol, GPT-5.6 Terra, Gemini 3.5 Flash (GHCP) |
+| **Advisor** | GPT-5.6 Sol | GPT-5.6 Sol (Azure) | GPT-5.6 Sol (GHCP) |
+| **Senior Coder** | GPT-5.6 Terra | DeepSeek V4 Flash | DeepSeek V4 Flash (Azure) |
+| **Workhorse Coder** | GPT-5.6 Luna | DeepSeek V4 Flash | DeepSeek V4 Flash (Azure) |
+| **Judgment** | GPT-5.6 Luna | GPT-5.6 Luna (Azure) | GPT-5.6 Luna (Azure) |
+| **Support / Research** | GPT-5.6 Luna | DeepSeek V4 Flash | DeepSeek V4 Flash (Azure) |
+| **Documentation** | GPT-5.6 Luna | GPT-5.6 Luna (Azure) | GPT-5.6 Luna (Azure) |
 
 ### Switching Modes
 
@@ -50,189 +51,132 @@ All token-based pricing from the [official GHCP pricing page](https://docs.githu
 
 ### Models Used in This System
 
-| Model | Input $/1M | Cached Input $/1M | Output $/1M | Strengths | Weaknesses | Used For |
-|-------|-----------|-------------------|------------|-----------|------------|----------|
-| **GPT-5.4 nano** | $0.20 | $0.02 | $1.25 | Cheapest GHCP model, 52.4% SWE-bench Pro, good tool use (56.1% MCP), 400K context | Weaker coding than DeepSeek, lower Terminal-Bench (46.3%) | Junior coding & research (GHCP) |
-| **DeepSeek V4 Flash** | $0.14 | ❌ None | $0.28 | Exceptional coding (79% SWE-bench Verified), 1M context, 69% MCP tool use, best long-context recall (78.7%) | No input caching on Azure, weaker on long autonomous sessions (56.9% Terminal-Bench) | Mid-level coding, research, exploration, diagnostics (BYOK/Hybrid) |
-| **GPT-5.4 mini** | $0.75 | $0.075 | $4.50 | Good coding (54.4% SWE-bench Pro), strong agentic (60% Terminal-Bench), fast (~273 t/s), 400K context | Expensive output relative to DeepSeek | Mid-level coding (GHCP), documentation (all modes) |
-| **DeepSeek V4 Pro** | $1.74 | ❌ None | $3.48 | Near-frontier coding (80.6% SWE-bench, 93.5 LiveCodeBench), strong agentic (67.9% Terminal-Bench, 73.6% MCP), 1M context | No input caching on Azure, weaker on HLE reasoning | Senior coding, code review, security (BYOK/Hybrid) |
-| **GPT-5.3-Codex** | Expensive | Yes | Expensive | Top-tier coding, deep reasoning, strong architecture | Expensive, Copilot quota | Senior coding, code review, security (GHCP) |
-| **Gemini 3.5 Flash** | $1.50 | $0.15 | $9.00 | Best-in-class tool use (83.6% MCP), strong terminal coding (76.2%), excellent agentic workflows | Expensive for a "Flash" model | Orchestration (tool-heavy tasks) |
-| **Claude Sonnet 4.6** | $3.00 | $0.30 | $15.00 | Excellent instruction-following, strong coding (79.6% SWE-bench), good agentic (79.3%) | Expensive output | Orchestration |
-| **GPT-5.4** | $2.50 | $0.25 | $15.00 | Highest global average (80.3), strong reasoning across all categories, 77.5% agentic | Same price as Sonnet on output | Reasoning-heavy orchestration |
-| **Claude Opus 4.8** | $5.00 | $0.50 | $25.00 | Frontier quality, best SWE-bench (83.5%), deep reasoning | Very expensive | Complex multi-system orchestration (rare) |
+| Model | Input $/1M | Cached Input $/1M | Output $/1M | Context | Max Output | Key Benchmark | Used For |
+|-------|-----------|-------------------|------------|---------|------------|---------------|----------|
+| **GPT-5.6 Sol** | $5.00 | $0.50 | $30.00 | 1.1M | 128K | 88.8% Terminal-Bench 2.1 | Advisor (thinking partner when stuck), orchestration fallback |
+| **GPT-5.6 Terra** | $2.50 | $0.25 | $15.00 | 1M | 128K | 82.5% Terminal-Bench 2.1 | Senior coding (GHCP), orchestration fallback |
+| **GPT-5.6 Luna** | $1.00 | $0.10 | $6.00 | 400K | 64K | 84.3% Terminal-Bench 2.1 | Workhorse coding (GHCP), judgment, support, docs |
+| **Claude Sonnet 5** | $2.00* | $0.20* | $10.00* | 1M | 128K | 80.4% Terminal-Bench 2.1, 63.2% SWE-bench Pro | **Primary orchestrator (Atlas)** |
+| **Claude Opus 4.8** | $5.00 | $0.50 | $25.00 | 1M | 128K | 69.2% SWE-bench Pro | Complex orchestration fallback |
+| **Gemini 3.5 Flash** | $1.50 | $0.15 | $9.00 | 1M | 64K | 83.6% MCP tool use | Orchestration (tool-heavy tasks) |
+| **DeepSeek V4 Flash** | $0.14 | ❌ None | $0.28 | 1M | 128K | 79% SWE-bench Verified, 78.7% long-context recall | Mid-level & senior coding (BYOK/Hybrid), research |
 
-### Why DeepSeek Can't Orchestrate
+*\* Claude Sonnet 5 promotional pricing through August 31, 2026. Standard pricing TBD.*
 
-DeepSeek models on Azure **do not support input caching**. The orchestrator re-sends the full conversation history every turn (50-100K+ repeated tokens). Without caching, this makes DeepSeek prohibitively expensive for orchestration despite its low headline pricing. GPT-5.4 with 90% cache hits pays $0.25/1M on repeated context vs $2.50 full — a 10× saving that DeepSeek cannot match.
+### Deprecated Models (removed from this system)
 
----
-
-## Agent Allocation
-
-### Implementation Subagents
-
-| Agent | Role | GHCP 🟦 | BYOK 🟩 / Hybrid 🟪 | Tier | Best For |
-|-------|------|---------|----------------------|------|----------|
-| **Daedalus** | Senior Engineer | GPT-5.3-Codex | DeepSeek V4 Pro | 🔴 Expensive | 5+ files, complex architecture, system design |
-| **Odysseus** | Mid-Level Engineer | GPT-5.4 mini | DeepSeek V4 Flash | 🟢 Cheap | 2-4 files, standard features, CRUD, API, UI |
-| **Icarus** | Junior Engineer | GPT-5.4 nano | *(not used — Odysseus handles all)* | 🟢 Cheapest | Single-file, config, renames, boilerplate (GHCP only) |
-
-> **Note:** In BYOK/Hybrid mode, Icarus is eliminated. DeepSeek V4 Flash is already extremely cheap ($0.28/1M output) and far more capable than a separate junior model. Odysseus handles all implementation regardless of complexity tier.
-
-### Specialist Subagents
-
-| Agent | GHCP 🟦 | BYOK 🟩 / Hybrid 🟪 | Tier | Specialty |
-|-------|---------|----------------------|------|-----------|
-| **Code-Review** | GPT-5.3-Codex | DeepSeek V4 Pro | 🔴 Expensive | Code quality, test coverage verification |
-| **Refactor-Engineer** | GPT-5.4 mini | DeepSeek V4 Flash | 🟢 Cheap | Clean Code principles, SOLID |
-| **Security-Review** | GPT-5.3-Codex | DeepSeek V4 Pro | 🔴 Expensive | OWASP analysis, threat modeling |
-| **Security-Fix** | GPT-5.4 mini | DeepSeek V4 Flash | 🟢 Cheap | Vulnerability remediation |
-| **PowerBI** | GPT-5.3-Codex | DeepSeek V4 Pro | 🔴 Expensive | Power BI models, DAX, TMDL via MCP |
-
-### Research & Support Subagents
-
-| Agent | GHCP 🟦 | BYOK 🟩 / Hybrid 🟪 | Tier | Specialty |
-|-------|---------|----------------------|------|-----------|
-| **Oracle** | GPT-5.4 nano | DeepSeek V4 Flash | 🟢 Cheap | Context gathering, multi-file research, requirements synthesis |
-| **Explorer** | GPT-5.4 nano | DeepSeek V4 Flash | 🟢 Cheap | Codebase exploration, dependency mapping, parallel searches |
-| **Documentation** | GPT-5.4 mini | GPT-5.4 mini (Azure) | 🟡 Moderate | Doc hygiene, dev journals, high-quality prose |
-| **Diagnostician** | GPT-5.4 nano | DeepSeek V4 Flash | 🟢 Cheap | ALL terminal commands, test execution, log reading |
-
-**Security Workflow:** Use Security-Review first (audit) → then Security-Fix (remediate)
-
-**Power BI Workflow:** Use PowerBI-subagent for any Power BI Desktop or Fabric semantic model tasks (requires the Power BI Model MCP server extension)
+| Model | Replaced By | Reason |
+|-------|-------------|--------|
+| GPT-5.4 | GPT-5.6 Terra | Same price, full generation newer |
+| GPT-5.4 mini | GPT-5.6 Luna | Consolidated into Luna tier |
+| GPT-5.4 nano | GPT-5.6 Luna | Consolidated into Luna tier |
+| GPT-5.5 | GPT-5.6 Sol | Same price, better benchmarks |
+| GPT-5.3-Codex | GPT-5.6 Terra | Terra is senior coder now; Sol reserved for advisor role |
+| Claude Sonnet 4.5 | Claude Sonnet 5 | Direct successor, all metrics improved |
+| Claude Sonnet 4.6 | Claude Sonnet 5 | Direct successor, all metrics improved |
+| DeepSeek V4 Pro | GPT-5.6 Luna | Luna has better agentic benchmarks (84.3% vs 67.9% T-Bench) at comparable cost |
 
 ---
 
-## Why This Model Allocation?
+## Subagent Allocation — GHCP Mode 🟦
 
-**Senior tier (Daedalus):** Complex tasks need strong reasoning and multi-step autonomy. In GHCP, Codex 5.3 excels here. In BYOK/Hybrid, DeepSeek V4 Pro delivers 80.6% SWE-bench and 67.9% Terminal-Bench at $3.48/M output — 7× cheaper than frontier models for near-parity quality. Also used for code review and security analysis where correctness matters most.
-
-**Mid-level tier (Odysseus):** The high-volume workhorse. Standard feature work doesn't need frontier reasoning. In GHCP, GPT-5.4 mini handles this at 54.4% SWE-bench Pro. In BYOK/Hybrid, DeepSeek V4 Flash delivers 79% SWE-bench at just $0.28/M output — 92% of Pro's quality at 12× less cost. In Hybrid mode, Odysseus also absorbs Icarus's role since Flash is already cheaper than any separate junior model while being vastly more capable.
-
-**Junior tier (Icarus, GHCP only):** In pure GHCP mode, GPT-5.4 nano ($0.20/$1.25) provides a meaningful cost savings over GPT-5.4 mini for trivial tasks. In Hybrid mode this tier is eliminated — DeepSeek V4 Flash is both cheaper and better.
-
-**Research & Support:** Single-shot agents with no multi-turn conversation, so caching is irrelevant. DeepSeek V4 Flash excels here: 69% MCP tool use (vs 56.1% for nano), 1M context for reading large files, and $0.28 output. Documentation uses GPT-5.4 mini for higher prose quality.
-
-**Orchestrators (Atlas variants):** Must support caching (long multi-turn conversations). Choose based on task complexity:
-- **Gemini 3.5 Flash** — best tool use, strong agentic (good default)
-- **Claude Sonnet 4.6** — best instruction-following reputation
-- **GPT-5.4** — highest overall reasoning scores
-- **Claude Opus 4.8** — frontier quality, reserve for complex multi-system tasks
-
-**Why BYOK limits orchestrators to Azure OpenAI models:** Non-Azure models (Claude, Gemini via Copilot) aren't available in BYOK. Azure OpenAI endpoints support prompt caching natively, which is essential for orchestration.
-
----
-
-## Prompt Cache Optimization
-
-Prompt caching is critical for multi-turn orchestration. Cached input tokens cost **90% less** (Anthropic/OpenAI) or **75% less** (Gemini). A cache miss on a 340K-token conversation can cost 10× more than a hit.
-
-### How Prefix Caching Works
-
-All major providers (Anthropic, OpenAI, Gemini) use **prefix-based caching**: the API matches the beginning of each request against recently cached content. If your request shares an identical prefix with a prior request, those tokens are served from cache. **Any change at position N invalidates everything after it.**
-
-The prompt structure sent by GHCP on each turn is roughly:
-
-```
-[System prompt] → [Agent definitions] → [Tool schemas] → [Conversation history] → [Latest message]
-```
-
-A mutation in any early section (system prompt, agent list, tools) destroys the cache for the entire conversation history below it.
-
-### Cache TTL by Provider
-
-| Provider | Default TTL | Extended TTL | Cached discount |
-|----------|-------------|--------------|-----------------|
-| Anthropic (Claude) | ~5 min (resets on hit) | 1 hour (2× write cost) | 90% off input |
-| OpenAI (GPT) | 5-10 min | **24 hours** (`prompt_cache_retention`) | 90% off input |
-| Google (Gemini) | Short/undisclosed (implicit) | Up to unlimited (explicit) | 75% off input |
-
-**Recommendation:** For long Atlas sessions, prefer OpenAI models (GPT-5.4/5.5) as orchestrators. The 24-hour cache retention means you can take breaks without losing your cached prefix.
-
-### Optimizations Applied in This Repo
-
-#### 1. Explicit Agent List (prevents lazy resolution)
-
-```yaml
-# BAD — GHCP lazily resolves agents on first reference, mutating the prefix mid-session
-agents: ["*"]
-
-# GOOD — all agents resolved at session start, prefix stays stable
-agents: ["Daedalus-subagent", "Odysseus-subagent", "Code-Review-subagent", ...]
-```
-
-#### 2. Minimal Orchestrator Tool List
-
-The orchestrator declares only ~16 tools it actually calls directly. All other tools (browser, terminal, bicep, notebooks) are available to subagents in their isolated contexts. This:
-- Removes ~34K characters of tool schemas from the prefix
-- Eliminates tool search promotion/demotion mutations
-
-#### 3. Deferred `<repoMemory>` Writes
-
-GHCP pins memory content near the top of the prompt. Mid-phase memory writes change the prefix and invalidate the cache for the entire conversation below. The orchestrator writes to scratchpad files during work and only commits to memory at phase boundaries.
-
-#### 4. Terminal Delegation (suppresses ambient context injection)
-
-The orchestrator never runs terminal commands directly. All execution is delegated to Diagnostician-subagent, which runs in an isolated context. This prevents GHCP from injecting changing terminal state (exit codes, output) into the orchestrator's prompt prefix.
-
-### Maintaining Cache Stability During a Session
-
-**Do:**
-- Keep the same model and effort level throughout a session
-- Let subagents handle volatile work (terminal, browser) in isolated contexts
-- Cycle the orchestrator after completing a major phase (clear chat, start fresh)
-- Use `/compact` while cache is still warm (within TTL) if context grows too large
-
-**Don't:**
-- Switch models or effort level mid-session (changes cache key)
-- Write to repoMemory during active work
-- Create or modify `.agent.md` files during a session
-- Let the orchestrator run terminal commands directly
-
-### Sync Script
-
-When updating Atlas agent prompts, use the sync script to propagate changes across all model variants while preserving each variant's `model:` line:
-
-```bash
-# Preview changes
-python sync_atlas_agents.py AtlasGPT.agent.md --dry-run
-
-# Apply to all Atlas*.agent.md in the same folder
-python sync_atlas_agents.py AtlasGPT.agent.md
-```
+| # | Subagent | Tier | Model | Rationale |
+|---|----------|------|-------|-----------|
+| — | **Atlas** (orchestrator) | Orchestrator | **Claude Sonnet 5** | Fast sequential execution, self-correcting, doesn't over-ask. Excellent coder — handles simple edits directly. |
+| 1 | Mentor | Advisor | **GPT-5.6 Sol** | Thinking partner when Atlas is stuck. Architecture guidance, unblocking, strategic reasoning. Rare usage (1–2×/session max). Not a coder. |
+| 2 | Daedalus | Senior Coder | **GPT-5.6 Terra** | Complex architecture, 5+ files, multi-file refactoring, performance-critical logic. |
+| 3 | Odysseus | Workhorse Coder | **GPT-5.6 Luna** | 1–4 files, CRUD, APIs, UI, config. Default choice when in doubt. |
+| 4 | Code-Review | Judgment | **GPT-5.6 Luna** | Correctness, quality, coverage review. Luna's 84.3% T-Bench delivers solid judgment. |
+| 5 | Refactor-Engineer | Workhorse Coder | **GPT-5.6 Luna** | Clean Code refactoring. Bounded, pattern-based. |
+| 6 | Security-Review | Senior Coder | **GPT-5.6 Terra** | OWASP analysis. Needs strong reasoning for threat modeling. |
+| 7 | Security-Fix | Workhorse Coder | **GPT-5.6 Luna** | Vulnerability remediation (guided by review output). |
+| 8 | PowerBI | Judgment | **GPT-5.6 Luna** | Semantic models, DAX. Luna's reasoning quality handles this well. |
+| 9 | Oracle | Support | **GPT-5.6 Luna** | Multi-file research, context synthesis. Reads a lot, writes little. |
+| 10 | Explorer | Support | **GPT-5.6 Luna** | Broad codebase searches, dependency mapping. |
+| 11 | Documentation | Support | **GPT-5.6 Luna** | Docs, dev journals. Good prose at low cost. |
+| 12 | Diagnostician | Support | **GPT-5.6 Luna** | Verbose terminal commands, test execution, log reading. |
 
 ---
 
-## Usage
+## Subagent Allocation — Hybrid Mode 🟪 (Value-Optimized)
 
-### Executing with Atlas
+| # | Subagent | Tier | Model | Source | Est. $/call | Rationale |
+|---|----------|------|-------|--------|-------------|-----------|
+| — | **Atlas** | Orchestrator | **Claude Sonnet 5** | GHCP | — | Fast, self-correcting orchestration with caching. Handles simple edits directly. |
+| 1 | Mentor | Advisor | **GPT-5.6 Sol** | Azure | ~$0.14 | Thinking partner when stuck. Rare. Worth the GHCP spend. |
+| 2 | Daedalus | Senior Coder |  **GPT-5.6 Luna** | Azure | ~$0.010 | 79% SWE-bench + 1M context for complex multi-file work at rock-bottom cost. |
+| 3 | Odysseus | Workhorse Coder | **DeepSeek V4 Flash** | Azure | ~$0.002 | Bounded 1–4 file edits with clear instructions from Atlas. |
+| 4 | Code-Review | Judgment | **GPT-5.6 Luna** | Azure | ~$0.028 | Needs evaluation quality. Luna's 84.3% T-Bench for judgment tasks. |
+| 5 | Refactor-Engineer | Workhorse Coder | **DeepSeek V4 Flash** | Azure | ~$0.002 | Pattern-based transforms. Bounded, clear instructions. |
+| 6 | Security-Review | Senior EXPERT Coder | **GPT-5.6 Terra** | Azure | ~$0.028 | Threat modeling needs reasoning quality. Luna on Azure avoids GHCP burn. |
+| 7 | Security-Fix | Workhorse Coder | **DeepSeek V4 Flash** | Azure | ~$0.002 | Guided by review output. Bounded edits. |
+| 8 | PowerBI | Judgment | **GPT-5.6 Luna** | Azure | ~$0.028 | DAX reasoning needs quality. |
+| 9 | Oracle | Support | **DeepSeek V4 Flash** | Azure | ~$0.010 | 1M context + 78.7% recall. Best for large-scale research. |
+| 10 | Explorer | Support | **DeepSeek V4 Flash** | Azure | ~$0.003 | Broad searches at lowest cost. |
+| 11 | Documentation | Support | **GPT-5.6 Luna** | Azure | ~$0.028 | Prose quality matters. |
+| 12 | Diagnostician | Support | **DeepSeek V4 Flash** | Azure | ~$0.002 | Terminal output parsing. Bounded, cheap. |
 
-```
-@Atlas Creates the plan
-@Atlas Implements the plan
-```
+### Hybrid Cost Summary
 
-Atlas delegates Planning → Implementation (Daedalus/Odysseus based on complexity) → Code-Review → approval → repeat.
+| Source | Roles | Est. cost/session |
+|--------|-------|-------------------|
+| GHCP (Sonnet 5 + Sol advisor) | Atlas, Mentor (rare) | ~$0.15–0.25 |
+| Azure (Flash + Luna) | Everything else | ~$0.05–0.10 |
+| **Total** | | **~$0.20–0.35** |
 
-### Direct Research
+---
 
-```
-@Oracle Research how the database layer is structured
-@Explorer Find all files related to authentication
-```
+## GPT-5.6 Sol as Advisor — Why Not as Coder
 
-### Workflow Example
+Sol is the highest-reasoning model available, but it's **wrong for coding subagent work:**
+- Slower execution, more tool calls, over-cautious
+- Asks clarifying questions instead of acting (bad for subagent that should just execute)
+- $30/M output for code that Terra writes equally well
 
-```
-User: @Atlas add a user dashboard
+Sol excels at **thinking, not typing:**
+- "I'm stuck on this architecture decision — what am I missing?"
+- "This design has a subtle flaw I can't identify — analyze it"
+- "What's the right pattern for this unusual constraint?"
 
-Atlas: [Clarifies scope, gathers context, presents plan]
-  ├─ @Explorer (find UI components)         ← cheap
-  ├─ @Oracle (understand data layer)        ← cheap
-  ├─ @Odysseus (implement feature)          ← cheap (Hybrid) / moderate (GHCP)
-  ├─ @Diagnostician (run tests)             ← cheap
-  ├─ @Code-Review (verify quality)          ← expensive (correctness matters)
-  └─ commit
-```
+The Mentor subagent is called rarely (1–2× per session, only when stuck) and produces short, high-value reasoning — not code. This maximizes Sol's strengths while minimizing its cost.
+
+---
+
+## GPT-5.6 vs Claude Sonnet 5 — Why Sonnet 5 Stays as Atlas
+
+| Dimension | Claude Sonnet 5 | GPT-5.6 Terra | GPT-5.6 Sol |
+|-----------|----------------|---------------|-------------|
+| **Terminal-Bench 2.1** | 80.4% | 82.5% | 88.8% |
+| **SWE-bench Pro** | 63.2% | Not published | Not published |
+| **Execution style** | Rapid sequential, self-correcting | Balanced, communicative | Deep reasoning, many tool calls, slower |
+| **Orchestrator fit** | ✅ Executes fast, doesn't over-ask | ✅ Good fallback | ⚠️ Great thinker, slow executor |
+| **Input $/1M** | $2.00 (promo) | $2.50 | $5.00 |
+| **Output $/1M** | $10.00 (promo) | $15.00 | $30.00 |
+| **Context** | 1M | 1M | 1.1M |
+
+**Verdict:** Sonnet 5 is the best Atlas orchestrator — fast, aggressive, self-correcting. Sol is the best *advisor* — deep, thorough, communicative. They complement each other perfectly in their respective roles.
+
+---
+
+## Design Principles
+
+1. **Atlas handles trivial work directly.** Edits under 50 lines, simple terminal commands, quick reads — no subagent overhead. Atlas always runs on a strong coding model (Sonnet 5), so don't fear inline edits.
+2. **Sol thinks, Terra codes, Luna works, Flash grinds.** Each model in its sweet spot.
+3. **No junior tier.** If it's too simple for a subagent, Atlas does it. No overhead for trivial tasks.
+4. **Hybrid saves money where it counts.** Only Atlas + Mentor (rare) burn GHCP credits. Everything else runs on Azure.
+5. **Flash for bounded tasks, Luna for judgment.** If the subagent gets clear instructions and executes, Flash wins on cost. If it needs to evaluate or reason about quality, Luna's agentic strength justifies the premium.
+6. **Caching is a first-class concern.** Orchestrator and subagent prompts are designed to maximize prefix caching. GPT-5.6 introduces explicit cache breakpoints and 30-minute minimum cache life — use them.
+
+---
+
+## Key Changes in This Revision (July 2026)
+
+1. **Deprecated:** GPT-5.4, GPT-5.4 mini, GPT-5.4 nano, GPT-5.5, GPT-5.3-Codex, DeepSeek V4 Pro, Claude Sonnet 4.5, Claude Sonnet 4.6.
+2. **Added:** GPT-5.6 Sol, GPT-5.6 Terra, GPT-5.6 Luna, Claude Sonnet 5.
+3. **Atlas orchestrator:** Claude Sonnet 5 (replaces Sonnet 4.5/4.6). Proven in production — fast, self-correcting, handles simple edits inline.
+4. **New Mentor role:** GPT-5.6 Sol as thinking partner/advisor (replaces Abby tool). Called rarely, high-value reasoning output.
+5. **Senior coder:** GPT-5.6 Terra (GHCP) / DeepSeek V4 Flash (Hybrid). Sol is too slow/expensive for coding.
+6. **Workhorse coder:** GPT-5.6 Luna (GHCP) / DeepSeek V4 Flash (Hybrid). Default delegation target.
+7. **Removed junior tier.** Atlas handles trivial tasks directly — subagent overhead costs more than inline execution.
+8. **Removed DeepSeek V4 Pro.** Luna matches or beats it on agentic benchmarks at comparable cost.
+9. **⚠️ Admin action required:** GPT-5.6 models are **off by default** in Copilot Business/Enterprise. Enable the policy in Copilot settings.

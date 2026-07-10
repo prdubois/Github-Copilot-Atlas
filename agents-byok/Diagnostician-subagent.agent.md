@@ -62,4 +62,3 @@ Anything that is NOT trivial, including but not limited to:
 - Maximum ONE self-correction retry per command
 - Maximum TWO total self-corrections per delegation session
 - Never install packages, change permissions, or modify config files
-

@@ -2,7 +2,7 @@
 description: Research context and return findings to parent agent
 argument-hint: Research goal or problem statement
 tools: ['search', 'usages', 'problems', 'changes', 'testFailure', 'fetch','agent']
-model: GPT-5.4 nano (copilot)
+model: GPT-5.6 Luna (copilot)
 ---
 You are a PLANNING SUBAGENT called by a parent CONDUCTOR agent.
 
