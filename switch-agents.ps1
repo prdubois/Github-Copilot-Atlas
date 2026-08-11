@@ -9,7 +9,8 @@ param(
     [string]$Mode = "ghcp"
 )
 
-$LinkPath = "$env:APPDATA\Code - Insiders\User\prompts"  # adjust to your actual symlink path
+#$LinkPath = "$env:APPDATA\Code - Insiders\User\prompts"  # adjust to your actual symlink path
+$LinkPath = "$env:APPDATA\Code\User\prompts"  # adjust to your actual symlink path
 $RepoDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $TargetDir = Join-Path $RepoDir "agents-$Mode"
 

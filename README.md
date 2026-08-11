@@ -59,7 +59,7 @@ All token-based pricing from the [official GHCP pricing page](https://docs.githu
 | **Claude Sonnet 5** | $2.00* | $0.20* | $10.00* | 1M | 128K | 80.4% Terminal-Bench 2.1, 63.2% SWE-bench Pro | **Primary orchestrator (Atlas)** |
 | **Claude Opus 4.8** | $5.00 | $0.50 | $25.00 | 1M | 128K | 69.2% SWE-bench Pro | Complex orchestration fallback |
 | **Gemini 3.5 Flash** | $1.50 | $0.15 | $9.00 | 1M | 64K | 83.6% MCP tool use | Orchestration (tool-heavy tasks) |
-| **DeepSeek V4 Flash** | $0.14 | ❌ None | $0.28 | 1M | 128K | 79% SWE-bench Verified, 78.7% long-context recall | Mid-level & senior coding (BYOK/Hybrid), research |
+| **DeepSeek V4 Flash** | $0.19 | $0.028 | $0.51 | 1M | 128K | 79% SWE-bench Verified, 78.7% long-context recall | Mid-level & senior coding (BYOK/Hybrid), research |
 
 *\* Claude Sonnet 5 promotional pricing through August 31, 2026. Standard pricing TBD.*
 
